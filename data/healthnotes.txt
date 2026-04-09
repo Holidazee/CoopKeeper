@@ -1,0 +1,13 @@
+2026-04-02,Ruby minor pecking issue,Separated briefly
+2026-03-10,General check,Healthy flock
+2026-02-22,Sunny slight lethargy,Recovered
+2026-01-25,Winter check,All good
+2025-12-18,Cold stress observed,Improved
+2025-11-10,Routine check,Healthy
+2025-10-12,Seasonal molt start,Normal
+2025-09-15,Full inspection,Excellent
+2025-08-10,Heat stress monitored,Stable
+2025-07-05,Hydration check,Good
+2025-06-10,Routine health check,Healthy
+2025-05-05,Spring check,Excellent
+2025-04-10,Initial yearly check,All good

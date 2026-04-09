@@ -1,0 +1,1679 @@
+#include "CoopTracker.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <limits>
+#include <ctime>
+#include <algorithm>
+
+using namespace std;
+
+// ================= HELPERS =================
+void CoopTracker::printSectionHeader(const string& title) const {
+    cout << "\n========================================\n";
+    cout << title << "\n";
+    cout << "========================================\n";
+}
+
+void CoopTracker::pauseForEnter() const {
+    cout << "\nPress Enter to continue...";
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
+string CoopTracker::getLineInput(const string& prompt) const {
+    string input;
+    cout << prompt;
+    getline(cin, input);
+    return input;
+}
+
+int CoopTracker::getValidatedInt(const string& prompt, int min, int max) const {
+    int value;
+    while (true) {
+        cout << prompt;
+        cin >> value;
+
+        if (!cin.fail() && value >= min && value <= max) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return value;
+        }
+
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input. Please try again.\n";
+    }
+}
+
+double CoopTracker::getValidatedDouble(const string& prompt, double min, double max) const {
+    double value;
+    while (true) {
+        cout << prompt;
+        cin >> value;
+
+        if (!cin.fail() && value >= min && value <= max) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return value;
+        }
+
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input. Please try again.\n";
+    }
+}
+
+string CoopTracker::promptForDate(const string& prompt) const {
+    return getLineInput(prompt);
+}
+
+string CoopTracker::escapeCSV(const string& value) const {
+    string escaped = value;
+    size_t pos = 0;
+    while ((pos = escaped.find('"', pos)) != string::npos) {
+        escaped.insert(pos, 1, '"');
+        pos += 2;
+    }
+    return "\"" + escaped + "\"";
+}
+
+// ================= DATE HELPERS =================
+bool CoopTracker::parseDate(const string& date, int& month, int& day, int& year) const {
+    char slash1, slash2;
+    stringstream ss(date);
+
+    ss >> month >> slash1 >> day >> slash2 >> year;
+
+    if (ss.fail() || slash1 != '/' || slash2 != '/') return false;
+    if (month < 1 || month > 12) return false;
+    if (day < 1 || day > 31) return false;
+    if (year < 1900 || year > 3000) return false;
+
+    return true;
+}
+
+bool CoopTracker::isDateInMonthYear(const string& date, int month, int year) const {
+    int m, d, y;
+    if (!parseDate(date, m, d, y)) return false;
+    return m == month && y == year;
+}
+
+bool CoopTracker::isDateInYear(const string& date, int year) const {
+    int m, d, y;
+    if (!parseDate(date, m, d, y)) return false;
+    return y == year;
+}
+
+int CoopTracker::dateToSortableValue(const string& date) const {
+    int m, d, y;
+    if (!parseDate(date, m, d, y)) return 0;
+    return y * 10000 + m * 100 + d;
+}
+
+string CoopTracker::monthYearLabel(int month, int year) const {
+    static const string months[12] = {
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    };
+
+    if (month < 1 || month > 12) {
+        return "Unknown";
+    }
+
+    return months[month - 1] + " " + to_string(year);
+}
+
+int CoopTracker::getCurrentMonth() const {
+    time_t now = time(nullptr);
+    tm localTime{};
+#ifdef _WIN32
+    localtime_s(&localTime, &now);
+#else
+    localTime = *localtime(&now);
+#endif
+    return localTime.tm_mon + 1;
+}
+
+int CoopTracker::getCurrentYear() const {
+    time_t now = time(nullptr);
+    tm localTime{};
+#ifdef _WIN32
+    localtime_s(&localTime, &now);
+#else
+    localTime = *localtime(&now);
+#endif
+    return localTime.tm_year + 1900;
+}
+
+string CoopTracker::getLastCleaningDate() const {
+    if (cleaningRecords.empty()) {
+        return "N/A";
+    }
+
+    string latestDate = cleaningRecords[0].getDate();
+    int latestValue = dateToSortableValue(latestDate);
+
+    for (size_t i = 1; i < cleaningRecords.size(); i++) {
+        int currentValue = dateToSortableValue(cleaningRecords[i].getDate());
+        if (currentValue > latestValue) {
+            latestValue = currentValue;
+            latestDate = cleaningRecords[i].getDate();
+        }
+    }
+
+    return latestDate;
+}
+
+// ================= LOAD / SAVE ALL =================
+void CoopTracker::loadAllData() {
+    loadChickensFromTxt();
+    loadFeedRecordsFromTxt();
+    loadExpensesFromTxt();
+    loadEggRecordsFromTxt();
+    loadHealthNotesFromTxt();
+    loadCleaningRecordsFromTxt();
+}
+
+void CoopTracker::saveAllData() const {
+    saveChickensToTxt();
+    saveFeedRecordsToTxt();
+    saveExpensesToTxt();
+    saveEggRecordsToTxt();
+    saveHealthNotesToTxt();
+    saveCleaningRecordsToTxt();
+}
+
+// ================= LOAD TXT =================
+void CoopTracker::loadChickensFromTxt() {
+    chickens.clear();
+    ifstream file("data/chickens.txt");
+    if (!file.is_open()) return;
+
+    string line;
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string name, breed, ageStr, notes;
+
+        getline(ss, name, '|');
+        getline(ss, breed, '|');
+        getline(ss, ageStr, '|');
+        getline(ss, notes);
+
+        int age = 0;
+        try {
+            age = stoi(ageStr);
+        }
+        catch (...) {
+            age = 0;
+        }
+
+        chickens.push_back(Chicken(name, breed, age, notes));
+    }
+}
+
+void CoopTracker::loadFeedRecordsFromTxt() {
+    feedRecords.clear();
+    ifstream file("data/feedrecords.txt");
+    if (!file.is_open()) return;
+
+    string line;
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string date, feedType, quantityStr, costStr;
+
+        getline(ss, date, '|');
+        getline(ss, feedType, '|');
+        getline(ss, quantityStr, '|');
+        getline(ss, costStr);
+
+        double quantity = 0.0;
+        double cost = 0.0;
+
+        try { quantity = stod(quantityStr); }
+        catch (...) { quantity = 0.0; }
+
+        try { cost = stod(costStr); }
+        catch (...) { cost = 0.0; }
+
+        feedRecords.push_back(FeedRecord(date, feedType, quantity, cost));
+    }
+}
+
+void CoopTracker::loadExpensesFromTxt() {
+    expenses.clear();
+    ifstream file("data/expenses.txt");
+    if (!file.is_open()) return;
+
+    string line;
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string date, category, description, amountStr;
+
+        getline(ss, date, '|');
+        getline(ss, category, '|');
+        getline(ss, description, '|');
+        getline(ss, amountStr);
+
+        double amount = 0.0;
+        try { amount = stod(amountStr); }
+        catch (...) { amount = 0.0; }
+
+        expenses.push_back(Expense(date, category, description, amount));
+    }
+}
+
+void CoopTracker::loadEggRecordsFromTxt() {
+    eggRecords.clear();
+    ifstream file("data/eggrecords.txt");
+    if (!file.is_open()) return;
+
+    string line;
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string date, countStr, notes;
+
+        getline(ss, date, '|');
+        getline(ss, countStr, '|');
+        getline(ss, notes);
+
+        int count = 0;
+        try { count = stoi(countStr); }
+        catch (...) { count = 0; }
+
+        eggRecords.push_back(EggRecord(date, count, notes));
+    }
+}
+
+void CoopTracker::loadHealthNotesFromTxt() {
+    healthNotes.clear();
+    ifstream file("data/healthnotes.txt");
+    if (!file.is_open()) return;
+
+    string line;
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string date, chickenName, note;
+
+        getline(ss, date, '|');
+        getline(ss, chickenName, '|');
+        getline(ss, note);
+
+        healthNotes.push_back(HealthNote(date, chickenName, note));
+    }
+}
+
+void CoopTracker::loadCleaningRecordsFromTxt() {
+    cleaningRecords.clear();
+    ifstream file("data/cleaningrecords.txt");
+    if (!file.is_open()) return;
+
+    string line;
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string date, task, notes;
+
+        getline(ss, date, '|');
+        getline(ss, task, '|');
+        getline(ss, notes);
+
+        cleaningRecords.push_back(CleaningRecord(date, task, notes));
+    }
+}
+
+// ================= SAVE TXT =================
+void CoopTracker::saveChickensToTxt() const {
+    ofstream file("data/chickens.txt");
+    for (const auto& chicken : chickens) {
+        file << chicken.getName() << "|"
+            << chicken.getBreed() << "|"
+            << chicken.getAge() << "|"
+            << chicken.getNotes() << "\n";
+    }
+}
+
+void CoopTracker::saveFeedRecordsToTxt() const {
+    ofstream file("data/feedrecords.txt");
+    for (const auto& record : feedRecords) {
+        file << record.getDate() << "|"
+            << record.getFeedType() << "|"
+            << record.getQuantity() << "|"
+            << record.getCost() << "\n";
+    }
+}
+
+void CoopTracker::saveExpensesToTxt() const {
+    ofstream file("data/expenses.txt");
+    for (const auto& expense : expenses) {
+        file << expense.getDate() << "|"
+            << expense.getCategory() << "|"
+            << expense.getDescription() << "|"
+            << expense.getAmount() << "\n";
+    }
+}
+
+void CoopTracker::saveEggRecordsToTxt() const {
+    ofstream file("data/eggrecords.txt");
+    for (const auto& record : eggRecords) {
+        file << record.getDate() << "|"
+            << record.getEggCount() << "|"
+            << record.getNotes() << "\n";
+    }
+}
+
+void CoopTracker::saveHealthNotesToTxt() const {
+    ofstream file("data/healthnotes.txt");
+    for (const auto& note : healthNotes) {
+        file << note.getDate() << "|"
+            << note.getChickenName() << "|"
+            << note.getNote() << "\n";
+    }
+}
+
+void CoopTracker::saveCleaningRecordsToTxt() const {
+    ofstream file("data/cleaningrecords.txt");
+    for (const auto& record : cleaningRecords) {
+        file << record.getDate() << "|"
+            << record.getTask() << "|"
+            << record.getNotes() << "\n";
+    }
+}
+
+// ================= EXPORT CSV =================
+void CoopTracker::exportChickensToCSV() const {
+    ofstream file("exports/chickens.csv");
+    file << "Name,Breed,Age,Notes\n";
+    for (const auto& chicken : chickens) {
+        file << escapeCSV(chicken.getName()) << ","
+            << escapeCSV(chicken.getBreed()) << ","
+            << chicken.getAge() << ","
+            << escapeCSV(chicken.getNotes()) << "\n";
+    }
+}
+
+void CoopTracker::exportFeedRecordsToCSV() const {
+    ofstream file("exports/feedrecords.csv");
+    file << "Date,Feed Type,Quantity,Cost\n";
+    for (const auto& record : feedRecords) {
+        file << escapeCSV(record.getDate()) << ","
+            << escapeCSV(record.getFeedType()) << ","
+            << record.getQuantity() << ","
+            << record.getCost() << "\n";
+    }
+}
+
+void CoopTracker::exportExpensesToCSV() const {
+    ofstream file("exports/expenses.csv");
+    file << "Date,Category,Description,Amount\n";
+    for (const auto& expense : expenses) {
+        file << escapeCSV(expense.getDate()) << ","
+            << escapeCSV(expense.getCategory()) << ","
+            << escapeCSV(expense.getDescription()) << ","
+            << expense.getAmount() << "\n";
+    }
+}
+
+void CoopTracker::exportEggRecordsToCSV() const {
+    ofstream file("exports/eggrecords.csv");
+    file << "Date,Egg Count,Notes\n";
+    for (const auto& record : eggRecords) {
+        file << escapeCSV(record.getDate()) << ","
+            << record.getEggCount() << ","
+            << escapeCSV(record.getNotes()) << "\n";
+    }
+}
+
+void CoopTracker::exportHealthNotesToCSV() const {
+    ofstream file("exports/healthnotes.csv");
+    file << "Date,Chicken Name,Note\n";
+    for (const auto& note : healthNotes) {
+        file << escapeCSV(note.getDate()) << ","
+            << escapeCSV(note.getChickenName()) << ","
+            << escapeCSV(note.getNote()) << "\n";
+    }
+}
+
+void CoopTracker::exportCleaningRecordsToCSV() const {
+    ofstream file("exports/cleaningrecords.csv");
+    file << "Date,Task,Notes\n";
+    for (const auto& record : cleaningRecords) {
+        file << escapeCSV(record.getDate()) << ","
+            << escapeCSV(record.getTask()) << ","
+            << escapeCSV(record.getNotes()) << "\n";
+    }
+}
+
+void CoopTracker::exportAllToCSV() const {
+    exportChickensToCSV();
+    exportFeedRecordsToCSV();
+    exportExpensesToCSV();
+    exportEggRecordsToCSV();
+    exportHealthNotesToCSV();
+    exportCleaningRecordsToCSV();
+}
+
+// ================= STARTUP / DASHBOARD =================
+void CoopTracker::showStartupStatus() const {
+    printSectionHeader("DATA LOAD STATUS");
+    cout << "Loaded:\n";
+    cout << "- " << chickens.size() << " chickens\n";
+    cout << "- " << feedRecords.size() << " feed records\n";
+    cout << "- " << expenses.size() << " expenses\n";
+    cout << "- " << eggRecords.size() << " egg records\n";
+    cout << "- " << healthNotes.size() << " health notes\n";
+    cout << "- " << cleaningRecords.size() << " cleaning records\n";
+}
+
+void CoopTracker::showDashboard() const {
+    int month = getCurrentMonth();
+    int year = getCurrentYear();
+
+    double expenseTotal = getExpenseTotalForMonth(month, year);
+    double feedTotal = getFeedCostTotalForMonth(month, year);
+    int eggTotalMonth = getEggTotalForMonth(month, year);
+    int eggTotalYear = getEggTotalForYear(year);
+    int healthCount = getHealthCountForMonth(month, year);
+    int cleaningCount = getCleaningCountForMonth(month, year);
+    double costPerDozen = getCostPerDozenForMonth(month, year);
+
+    time_t now = time(nullptr);
+    tm localTime{};
+#ifdef _WIN32
+    localtime_s(&localTime, &now);
+#else
+    localTime = *localtime(&now);
+#endif
+
+    int todayMonth = localTime.tm_mon + 1;
+    int todayDay = localTime.tm_mday;
+    int todayYear = localTime.tm_year + 1900;
+
+    int eggsToday = 0;
+    for (const auto& record : eggRecords) {
+        int m, d, y;
+        if (parseDate(record.getDate(), m, d, y)) {
+            if (m == todayMonth && d == todayDay && y == todayYear) {
+                eggsToday += record.getEggCount();
+            }
+        }
+    }
+
+    double avgMonthlyFeedCost = getFeedCostTotalForYear(year) / 12.0;
+
+    string status = "Flock stable";
+    if (eggTotalMonth > 0 && costPerDozen > 0.0) {
+        status = "Production active";
+    }
+    if (healthCount > 0) {
+        status = "Recent health activity logged";
+    }
+
+    printSectionHeader("COOPKEEPER DASHBOARD");
+
+    cout << fixed << setprecision(2);
+
+    cout << "\nFlock Size:                " << chickens.size() << " chickens\n";
+
+    cout << "\n--- PRODUCTION ---\n";
+    cout << "Eggs (Today):              " << eggsToday << "\n";
+    cout << "Eggs (This Month):         " << eggTotalMonth << "\n";
+    cout << "Eggs (This Year):          " << eggTotalYear << "\n";
+
+    cout << "\n--- FINANCIAL ---\n";
+    cout << "Feed Cost (This Month):    $" << feedTotal << "\n";
+    cout << "Total Expenses (Month):    $" << expenseTotal << "\n";
+    if (eggTotalMonth > 0) {
+        cout << "Estimated Cost/Dozen:      $" << costPerDozen << "\n";
+    }
+    else {
+        cout << "Estimated Cost/Dozen:      N/A\n";
+    }
+
+    cout << "\n--- FEED ---\n";
+    if (!feedRecords.empty()) {
+        string lastFeedDate = "N/A";
+        int latestValue = 0;
+        for (const auto& record : feedRecords) {
+            int value = dateToSortableValue(record.getDate());
+            if (value > latestValue) {
+                latestValue = value;
+                lastFeedDate = record.getDate();
+            }
+        }
+        cout << "Last Feed Purchase:        " << lastFeedDate << "\n";
+    }
+    else {
+        cout << "Last Feed Purchase:        N/A\n";
+    }
+    cout << "Avg Monthly Feed Cost:     $" << avgMonthlyFeedCost << "\n";
+
+    cout << "\n--- HEALTH ---\n";
+    cout << "Health Notes (This Month): " << healthCount << "\n";
+    if (!healthNotes.empty()) {
+        string lastHealthDate = "N/A";
+        int latestValue = 0;
+        for (const auto& note : healthNotes) {
+            int value = dateToSortableValue(note.getDate());
+            if (value > latestValue) {
+                latestValue = value;
+                lastHealthDate = note.getDate();
+            }
+        }
+        cout << "Last Health Check:         " << lastHealthDate << "\n";
+    }
+    else {
+        cout << "Last Health Check:         N/A\n";
+    }
+
+    cout << "\n--- CLEANING ---\n";
+    cout << "Total Cleanings (Month):   " << cleaningCount << "\n";
+    cout << "Last Cleaning Date:        " << getLastCleaningDate() << "\n";
+
+    cout << "\n-------------------------------------------\n";
+    cout << "Status: " << status << "\n";
+    cout << "-------------------------------------------\n";
+}
+
+void CoopTracker::showMonthlyReport() const {
+    int month = getValidatedInt("Enter month (1-12): ", 1, 12);
+    int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+    printSectionHeader("MONTHLY REPORT - " + monthYearLabel(month, year));
+
+    double expenseTotal = getExpenseTotalForMonth(month, year);
+    double feedTotal = getFeedCostTotalForMonth(month, year);
+    int eggTotal = getEggTotalForMonth(month, year);
+    int healthCount = getHealthCountForMonth(month, year);
+    int cleaningCount = getCleaningCountForMonth(month, year);
+    double costPerEgg = getCostPerEggForMonth(month, year);
+    double costPerDozen = getCostPerDozenForMonth(month, year);
+
+    cout << fixed << setprecision(2);
+    cout << "Expenses: $" << expenseTotal << "\n";
+    cout << "Feed Cost: $" << feedTotal << "\n";
+    cout << "Eggs Collected: " << eggTotal << "\n";
+    cout << "Health Notes: " << healthCount << "\n";
+    cout << "Cleaning Records: " << cleaningCount << "\n";
+
+    if (eggTotal > 0) {
+        cout << "Cost Per Egg: $" << costPerEgg << "\n";
+        cout << "Cost Per Dozen: $" << costPerDozen << "\n";
+    }
+    else {
+        cout << "Cost Per Egg: N/A\n";
+        cout << "Cost Per Dozen: N/A\n";
+    }
+}
+
+void CoopTracker::showYearlyReport() const {
+    int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+    printSectionHeader("YEARLY REPORT - " + to_string(year));
+
+    double expenseTotal = getExpenseTotalForYear(year);
+    double feedTotal = getFeedCostTotalForYear(year);
+    int eggTotal = getEggTotalForYear(year);
+    int healthCount = getHealthCountForYear(year);
+    int cleaningCount = getCleaningCountForYear(year);
+    double costPerEgg = getCostPerEggForYear(year);
+    double costPerDozen = getCostPerDozenForYear(year);
+
+    cout << fixed << setprecision(2);
+    cout << "Expenses: $" << expenseTotal << "\n";
+    cout << "Feed Cost: $" << feedTotal << "\n";
+    cout << "Eggs Collected: " << eggTotal << "\n";
+    cout << "Health Notes: " << healthCount << "\n";
+    cout << "Cleaning Records: " << cleaningCount << "\n";
+
+    if (eggTotal > 0) {
+        cout << "Cost Per Egg: $" << costPerEgg << "\n";
+        cout << "Cost Per Dozen: $" << costPerDozen << "\n";
+    }
+    else {
+        cout << "Cost Per Egg: N/A\n";
+        cout << "Cost Per Dozen: N/A\n";
+    }
+}
+
+// ================= SUMMARY HELPERS =================
+double CoopTracker::getExpenseTotalForMonth(int month, int year) const {
+    double total = 0.0;
+    for (const auto& expense : expenses) {
+        if (isDateInMonthYear(expense.getDate(), month, year)) {
+            total += expense.getAmount();
+        }
+    }
+    return total;
+}
+
+double CoopTracker::getExpenseTotalForYear(int year) const {
+    double total = 0.0;
+    for (const auto& expense : expenses) {
+        if (isDateInYear(expense.getDate(), year)) {
+            total += expense.getAmount();
+        }
+    }
+    return total;
+}
+
+double CoopTracker::getFeedCostTotalForMonth(int month, int year) const {
+    double total = 0.0;
+    for (const auto& record : feedRecords) {
+        if (isDateInMonthYear(record.getDate(), month, year)) {
+            total += record.getCost();
+        }
+    }
+    return total;
+}
+
+double CoopTracker::getFeedCostTotalForYear(int year) const {
+    double total = 0.0;
+    for (const auto& record : feedRecords) {
+        if (isDateInYear(record.getDate(), year)) {
+            total += record.getCost();
+        }
+    }
+    return total;
+}
+
+int CoopTracker::getEggTotalForMonth(int month, int year) const {
+    int total = 0;
+    for (const auto& record : eggRecords) {
+        if (isDateInMonthYear(record.getDate(), month, year)) {
+            total += record.getEggCount();
+        }
+    }
+    return total;
+}
+
+int CoopTracker::getEggTotalForYear(int year) const {
+    int total = 0;
+    for (const auto& record : eggRecords) {
+        if (isDateInYear(record.getDate(), year)) {
+            total += record.getEggCount();
+        }
+    }
+    return total;
+}
+
+int CoopTracker::getHealthCountForMonth(int month, int year) const {
+    int count = 0;
+    for (const auto& note : healthNotes) {
+        if (isDateInMonthYear(note.getDate(), month, year)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int CoopTracker::getHealthCountForYear(int year) const {
+    int count = 0;
+    for (const auto& note : healthNotes) {
+        if (isDateInYear(note.getDate(), year)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int CoopTracker::getCleaningCountForMonth(int month, int year) const {
+    int count = 0;
+    for (const auto& record : cleaningRecords) {
+        if (isDateInMonthYear(record.getDate(), month, year)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int CoopTracker::getCleaningCountForYear(int year) const {
+    int count = 0;
+    for (const auto& record : cleaningRecords) {
+        if (isDateInYear(record.getDate(), year)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+double CoopTracker::getCostPerEggForMonth(int month, int year) const {
+    int eggs = getEggTotalForMonth(month, year);
+    if (eggs <= 0) return 0.0;
+
+    double totalCost = getExpenseTotalForMonth(month, year) + getFeedCostTotalForMonth(month, year);
+    return totalCost / eggs;
+}
+
+double CoopTracker::getCostPerDozenForMonth(int month, int year) const {
+    return getCostPerEggForMonth(month, year) * 12.0;
+}
+
+double CoopTracker::getCostPerEggForYear(int year) const {
+    int eggs = getEggTotalForYear(year);
+    if (eggs <= 0) return 0.0;
+
+    double totalCost = getExpenseTotalForYear(year) + getFeedCostTotalForYear(year);
+    return totalCost / eggs;
+}
+
+double CoopTracker::getCostPerDozenForYear(int year) const {
+    return getCostPerEggForYear(year) * 12.0;
+}
+
+// ================= DISPLAY HELPERS =================
+void CoopTracker::printFeedRecordList(const vector<FeedRecord>& records) const {
+    for (size_t i = 0; i < records.size(); i++) {
+        cout << i + 1 << ". "
+            << records[i].getDate() << " | "
+            << records[i].getFeedType() << " | Qty: "
+            << records[i].getQuantity() << " | Cost: $"
+            << fixed << setprecision(2) << records[i].getCost() << "\n";
+    }
+}
+
+void CoopTracker::printExpenseList(const vector<Expense>& records) const {
+    for (size_t i = 0; i < records.size(); i++) {
+        cout << i + 1 << ". "
+            << records[i].getDate() << " | "
+            << records[i].getCategory() << " | "
+            << records[i].getDescription() << " | $"
+            << fixed << setprecision(2) << records[i].getAmount() << "\n";
+    }
+}
+
+void CoopTracker::printEggRecordListSorted(const vector<EggRecord>& records) const {
+    vector<EggRecord> sortedRecords = records;
+
+    sort(sortedRecords.begin(), sortedRecords.end(),
+        [this](const EggRecord& a, const EggRecord& b) {
+            return dateToSortableValue(a.getDate()) < dateToSortableValue(b.getDate());
+        });
+
+    for (size_t i = 0; i < sortedRecords.size(); i++) {
+        cout << i + 1 << ". "
+            << sortedRecords[i].getDate() << " | Count: "
+            << sortedRecords[i].getEggCount() << " | Notes: "
+            << sortedRecords[i].getNotes() << "\n";
+    }
+}
+
+void CoopTracker::printHealthNoteList(const vector<HealthNote>& records) const {
+    for (size_t i = 0; i < records.size(); i++) {
+        cout << i + 1 << ". "
+            << records[i].getDate() << " | "
+            << records[i].getChickenName() << " | "
+            << records[i].getNote() << "\n";
+    }
+}
+
+void CoopTracker::printCleaningRecordList(const vector<CleaningRecord>& records) const {
+    for (size_t i = 0; i < records.size(); i++) {
+        cout << i + 1 << ". "
+            << records[i].getDate() << " | "
+            << records[i].getTask() << " | "
+            << records[i].getNotes() << "\n";
+    }
+}
+
+// ================= RUN =================
+void CoopTracker::run() {
+    loadAllData();
+    showStartupStatus();
+    showDashboard();
+    pauseForEnter();
+
+    int choice;
+    do {
+        cout << "\n";
+        cout << "----------------------------------------\n";
+        cout << "\n";
+
+        printSectionHeader("COOP TRACKER");
+        cout << "1. Chickens\n";
+        cout << "2. Feed Records\n";
+        cout << "3. Expenses\n";
+        cout << "4. Egg Records\n";
+        cout << "5. Health Notes\n";
+        cout << "6. Cleaning Records\n";
+        cout << "7. Monthly Report\n";
+        cout << "8. Yearly Report\n";
+        cout << "9. Export All to CSV\n";
+        cout << "10. Exit\n";
+
+        choice = getValidatedInt("Choice: ", 1, 10);
+
+        switch (choice) {
+        case 1: chickenMenu(); break;
+        case 2: feedMenu(); break;
+        case 3: expenseMenu(); break;
+        case 4: eggMenu(); break;
+        case 5: healthMenu(); break;
+        case 6: cleaningMenu(); break;
+        case 7: showMonthlyReport(); break;
+        case 8: showYearlyReport(); break;
+        case 9:
+            exportAllToCSV();
+            cout << "All CSV exports created in exports folder.\n";
+            break;
+        case 10:
+            saveAllData();
+            cout << "Goodbye.\n";
+            break;
+        }
+    } while (choice != 10);
+}
+
+// ================= CHICKENS =================
+void CoopTracker::chickenMenu() {
+    int choice;
+    do {
+        printSectionHeader("CHICKENS");
+        cout << "1. Add\n";
+        cout << "2. View\n";
+        cout << "3. Edit\n";
+        cout << "4. Delete\n";
+        cout << "5. Back\n";
+
+        choice = getValidatedInt("Choice: ", 1, 5);
+
+        switch (choice) {
+        case 1: addChicken(); break;
+        case 2: viewChickens(); break;
+        case 3: editChicken(); break;
+        case 4: deleteChicken(); break;
+        }
+    } while (choice != 5);
+}
+
+void CoopTracker::addChicken() {
+    printSectionHeader("ADD CHICKEN");
+
+    string name = getLineInput("Name: ");
+    string breed = getLineInput("Breed: ");
+    int age = getValidatedInt("Age: ", 0, 100);
+    string notes = getLineInput("Notes: ");
+
+    chickens.push_back(Chicken(name, breed, age, notes));
+    saveChickensToTxt();
+
+    cout << "Chicken added.\n";
+}
+
+void CoopTracker::viewChickens() const {
+    printSectionHeader("CHICKENS");
+
+    if (chickens.empty()) {
+        cout << "No chickens found.\n";
+        return;
+    }
+
+    for (size_t i = 0; i < chickens.size(); i++) {
+        cout << i + 1 << ". "
+            << chickens[i].getName() << " | "
+            << chickens[i].getBreed() << " | Age: "
+            << chickens[i].getAge() << " | Notes: "
+            << chickens[i].getNotes() << "\n";
+    }
+}
+
+void CoopTracker::editChicken() {
+    if (chickens.empty()) {
+        cout << "No chickens to edit.\n";
+        return;
+    }
+
+    viewChickens();
+    int choice = getValidatedInt("Select chicken: ", 1, static_cast<int>(chickens.size()));
+
+    string name = getLineInput("New name: ");
+    string breed = getLineInput("New breed: ");
+    int age = getValidatedInt("New age: ", 0, 100);
+    string notes = getLineInput("New notes: ");
+
+    chickens[choice - 1].setName(name);
+    chickens[choice - 1].setBreed(breed);
+    chickens[choice - 1].setAge(age);
+    chickens[choice - 1].setNotes(notes);
+
+    saveChickensToTxt();
+    cout << "Chicken updated.\n";
+}
+
+void CoopTracker::deleteChicken() {
+    if (chickens.empty()) {
+        cout << "No chickens to delete.\n";
+        return;
+    }
+
+    viewChickens();
+    int choice = getValidatedInt("Select chicken to delete: ", 1, static_cast<int>(chickens.size()));
+    chickens.erase(chickens.begin() + (choice - 1));
+    saveChickensToTxt();
+
+    cout << "Chicken deleted.\n";
+}
+
+// ================= FEED =================
+void CoopTracker::feedMenu() {
+    int choice;
+    do {
+        printSectionHeader("FEED RECORDS");
+        cout << "1. Add\n";
+        cout << "2. View\n";
+        cout << "3. Edit\n";
+        cout << "4. Delete\n";
+        cout << "5. Back\n";
+
+        choice = getValidatedInt("Choice: ", 1, 5);
+
+        switch (choice) {
+        case 1: addFeedRecord(); break;
+        case 2: viewFeedRecords(); break;
+        case 3: editFeedRecord(); break;
+        case 4: deleteFeedRecord(); break;
+        }
+    } while (choice != 5);
+}
+
+void CoopTracker::addFeedRecord() {
+    printSectionHeader("ADD FEED RECORD");
+
+    string date = promptForDate("Date (MM/DD/YYYY): ");
+    string feedType = getLineInput("Feed type: ");
+    double quantity = getValidatedDouble("Quantity: ", 0.0, 1000000.0);
+    double cost = getValidatedDouble("Cost: ", 0.0, 1000000.0);
+
+    feedRecords.push_back(FeedRecord(date, feedType, quantity, cost));
+    saveFeedRecordsToTxt();
+
+    cout << "Feed record added.\n";
+}
+
+void CoopTracker::viewFeedRecords() const {
+    if (feedRecords.empty()) {
+        printSectionHeader("FEED RECORDS");
+        cout << "No feed records found.\n";
+        return;
+    }
+
+    printSectionHeader("VIEW FEED RECORDS");
+    cout << "1. View All\n";
+    cout << "2. View By Month\n";
+    int option = getValidatedInt("Choice: ", 1, 2);
+
+    if (option == 1) {
+        printSectionHeader("FEED RECORDS - ALL");
+        double totalCost = 0.0;
+        for (const auto& record : feedRecords) totalCost += record.getCost();
+
+        cout << fixed << setprecision(2);
+        cout << "Total Feed Cost: $" << totalCost << "\n";
+        cout << "Records Found: " << feedRecords.size() << "\n\n";
+
+        printFeedRecordList(feedRecords);
+    }
+    else {
+        int month = getValidatedInt("Enter month (1-12): ", 1, 12);
+        int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+        vector<FeedRecord> filtered;
+        double totalCost = 0.0;
+
+        for (const auto& record : feedRecords) {
+            if (isDateInMonthYear(record.getDate(), month, year)) {
+                filtered.push_back(record);
+                totalCost += record.getCost();
+            }
+        }
+
+        printSectionHeader("FEED RECORDS - " + monthYearLabel(month, year));
+
+        if (filtered.empty()) {
+            cout << "No feed records found for this month.\n";
+            return;
+        }
+
+        cout << fixed << setprecision(2);
+        cout << "Total Feed Cost: $" << totalCost << "\n";
+        cout << "Records Found: " << filtered.size() << "\n\n";
+
+        printFeedRecordList(filtered);
+    }
+}
+
+void CoopTracker::editFeedRecord() {
+    if (feedRecords.empty()) {
+        cout << "No feed records to edit.\n";
+        return;
+    }
+
+    printSectionHeader("FEED RECORDS");
+    printFeedRecordList(feedRecords);
+
+    int choice = getValidatedInt("Select record: ", 1, static_cast<int>(feedRecords.size()));
+
+    string date = promptForDate("New date (MM/DD/YYYY): ");
+    string type = getLineInput("New type: ");
+    double qty = getValidatedDouble("New qty: ", 0.0, 1000000.0);
+    double cost = getValidatedDouble("New cost: ", 0.0, 1000000.0);
+
+    feedRecords[choice - 1].setDate(date);
+    feedRecords[choice - 1].setFeedType(type);
+    feedRecords[choice - 1].setQuantity(qty);
+    feedRecords[choice - 1].setCost(cost);
+
+    saveFeedRecordsToTxt();
+    cout << "Feed record updated.\n";
+}
+
+void CoopTracker::deleteFeedRecord() {
+    if (feedRecords.empty()) {
+        cout << "No feed records to delete.\n";
+        return;
+    }
+
+    printSectionHeader("FEED RECORDS");
+    printFeedRecordList(feedRecords);
+
+    int choice = getValidatedInt("Select record to delete: ", 1, static_cast<int>(feedRecords.size()));
+    feedRecords.erase(feedRecords.begin() + (choice - 1));
+    saveFeedRecordsToTxt();
+
+    cout << "Feed record deleted.\n";
+}
+
+// ================= EXPENSES =================
+void CoopTracker::expenseMenu() {
+    int choice;
+    do {
+        printSectionHeader("EXPENSES");
+        cout << "1. Add\n";
+        cout << "2. View\n";
+        cout << "3. Edit\n";
+        cout << "4. Delete\n";
+        cout << "5. Summary by Category\n";
+        cout << "6. Back\n";
+
+        choice = getValidatedInt("Choice: ", 1, 6);
+
+        switch (choice) {
+        case 1: addExpense(); break;
+        case 2: viewExpenses(); break;
+        case 3: editExpense(); break;
+        case 4: deleteExpense(); break;
+        case 5: showExpenseSummaryByCategory(); break;
+        }
+    } while (choice != 6);
+}
+
+void CoopTracker::addExpense() {
+    printSectionHeader("ADD EXPENSE");
+
+    string date = promptForDate("Date (MM/DD/YYYY): ");
+    string category = getLineInput("Category: ");
+    string description = getLineInput("Description: ");
+    double amount = getValidatedDouble("Amount: ", 0.0, 1000000.0);
+
+    expenses.push_back(Expense(date, category, description, amount));
+    saveExpensesToTxt();
+
+    cout << "Expense added.\n";
+}
+
+void CoopTracker::viewExpenses() const {
+    if (expenses.empty()) {
+        printSectionHeader("EXPENSES");
+        cout << "No expenses found.\n";
+        return;
+    }
+
+    printSectionHeader("VIEW EXPENSES");
+    cout << "1. View All\n";
+    cout << "2. View By Month\n";
+    int option = getValidatedInt("Choice: ", 1, 2);
+
+    if (option == 1) {
+        printSectionHeader("EXPENSES - ALL");
+
+        double total = 0.0;
+        for (const auto& expense : expenses) total += expense.getAmount();
+
+        cout << fixed << setprecision(2);
+        cout << "Total Spent: $" << total << "\n";
+        cout << "Records Found: " << expenses.size() << "\n\n";
+
+        printExpenseList(expenses);
+    }
+    else {
+        int month = getValidatedInt("Enter month (1-12): ", 1, 12);
+        int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+        vector<Expense> filtered;
+        double total = 0.0;
+
+        for (const auto& expense : expenses) {
+            if (isDateInMonthYear(expense.getDate(), month, year)) {
+                filtered.push_back(expense);
+                total += expense.getAmount();
+            }
+        }
+
+        printSectionHeader("EXPENSES - " + monthYearLabel(month, year));
+
+        if (filtered.empty()) {
+            cout << "No expenses found for this month.\n";
+            return;
+        }
+
+        cout << fixed << setprecision(2);
+        cout << "Total Spent: $" << total << "\n";
+        cout << "Records Found: " << filtered.size() << "\n\n";
+
+        printExpenseList(filtered);
+    }
+}
+
+void CoopTracker::editExpense() {
+    if (expenses.empty()) {
+        cout << "No expenses to edit.\n";
+        return;
+    }
+
+    printSectionHeader("EXPENSES");
+    printExpenseList(expenses);
+
+    int choice = getValidatedInt("Select expense: ", 1, static_cast<int>(expenses.size()));
+
+    string date = promptForDate("New date (MM/DD/YYYY): ");
+    string cat = getLineInput("New category: ");
+    string desc = getLineInput("New description: ");
+    double amt = getValidatedDouble("New amount: ", 0.0, 1000000.0);
+
+    expenses[choice - 1].setDate(date);
+    expenses[choice - 1].setCategory(cat);
+    expenses[choice - 1].setDescription(desc);
+    expenses[choice - 1].setAmount(amt);
+
+    saveExpensesToTxt();
+    cout << "Expense updated.\n";
+}
+
+void CoopTracker::deleteExpense() {
+    if (expenses.empty()) {
+        cout << "No expenses to delete.\n";
+        return;
+    }
+
+    printSectionHeader("EXPENSES");
+    printExpenseList(expenses);
+
+    int choice = getValidatedInt("Select expense to delete: ", 1, static_cast<int>(expenses.size()));
+    expenses.erase(expenses.begin() + (choice - 1));
+    saveExpensesToTxt();
+
+    cout << "Expense deleted.\n";
+}
+
+void CoopTracker::showExpenseSummaryByCategory() const {
+    if (expenses.empty()) {
+        printSectionHeader("EXPENSE SUMMARY");
+        cout << "No expenses found.\n";
+        return;
+    }
+
+    printSectionHeader("EXPENSE SUMMARY");
+    cout << "1. All Records\n";
+    cout << "2. By Month\n";
+    int option = getValidatedInt("Choice: ", 1, 2);
+
+    vector<Expense> source;
+
+    if (option == 1) {
+        source = expenses;
+        printSectionHeader("EXPENSE SUMMARY - ALL");
+    }
+    else {
+        int month = getValidatedInt("Enter month (1-12): ", 1, 12);
+        int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+        for (const auto& expense : expenses) {
+            if (isDateInMonthYear(expense.getDate(), month, year)) {
+                source.push_back(expense);
+            }
+        }
+
+        printSectionHeader("EXPENSE SUMMARY - " + monthYearLabel(month, year));
+    }
+
+    if (source.empty()) {
+        cout << "No matching expenses found.\n";
+        return;
+    }
+
+    vector<string> categories;
+    vector<double> totals;
+    double grandTotal = 0.0;
+
+    for (const auto& expense : source) {
+        grandTotal += expense.getAmount();
+
+        bool found = false;
+        for (size_t i = 0; i < categories.size(); i++) {
+            if (categories[i] == expense.getCategory()) {
+                totals[i] += expense.getAmount();
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            categories.push_back(expense.getCategory());
+            totals.push_back(expense.getAmount());
+        }
+    }
+
+    cout << fixed << setprecision(2);
+    cout << "Total Spent: $" << grandTotal << "\n\n";
+
+    for (size_t i = 0; i < categories.size(); i++) {
+        cout << categories[i] << ": $" << totals[i] << "\n";
+    }
+}
+
+// ================= EGG RECORDS =================
+void CoopTracker::eggMenu() {
+    int choice;
+    do {
+        printSectionHeader("EGG RECORDS");
+        cout << "1. Add\n";
+        cout << "2. View\n";
+        cout << "3. Edit\n";
+        cout << "4. Delete\n";
+        cout << "5. Back\n";
+
+        choice = getValidatedInt("Choice: ", 1, 5);
+
+        switch (choice) {
+        case 1: addEggRecord(); break;
+        case 2: viewEggRecords(); break;
+        case 3: editEggRecord(); break;
+        case 4: deleteEggRecord(); break;
+        }
+    } while (choice != 5);
+}
+
+void CoopTracker::addEggRecord() {
+    printSectionHeader("ADD EGG RECORD");
+
+    string date = promptForDate("Date (MM/DD/YYYY): ");
+    int count = getValidatedInt("Egg count: ", 0, 1000000);
+    string notes = getLineInput("Notes: ");
+
+    eggRecords.push_back(EggRecord(date, count, notes));
+    saveEggRecordsToTxt();
+
+    cout << "Egg record added.\n";
+}
+
+void CoopTracker::viewEggRecords() const {
+    if (eggRecords.empty()) {
+        printSectionHeader("EGG RECORDS");
+        cout << "No egg records found.\n";
+        return;
+    }
+
+    printSectionHeader("VIEW EGG RECORDS");
+    cout << "1. View All\n";
+    cout << "2. View By Month\n";
+    int option = getValidatedInt("Choice: ", 1, 2);
+
+    if (option == 1) {
+        printSectionHeader("EGG RECORDS - ALL");
+
+        int totalEggs = 0;
+        for (const auto& record : eggRecords) totalEggs += record.getEggCount();
+
+        cout << "Total Eggs: " << totalEggs << "\n";
+        cout << "Records Found: " << eggRecords.size() << "\n";
+        cout << "Sort Order: Oldest to Newest\n\n";
+
+        printEggRecordListSorted(eggRecords);
+    }
+    else {
+        int month = getValidatedInt("Enter month (1-12): ", 1, 12);
+        int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+        vector<EggRecord> filtered;
+        int totalEggs = 0;
+
+        for (const auto& record : eggRecords) {
+            if (isDateInMonthYear(record.getDate(), month, year)) {
+                filtered.push_back(record);
+                totalEggs += record.getEggCount();
+            }
+        }
+
+        printSectionHeader("EGG RECORDS - " + monthYearLabel(month, year));
+
+        if (filtered.empty()) {
+            cout << "No egg records found for this month.\n";
+            return;
+        }
+
+        cout << "Total Eggs: " << totalEggs << "\n";
+        cout << "Records Found: " << filtered.size() << "\n";
+        cout << "Sort Order: Oldest to Newest\n\n";
+
+        printEggRecordListSorted(filtered);
+    }
+}
+
+void CoopTracker::editEggRecord() {
+    if (eggRecords.empty()) {
+        cout << "No egg records to edit.\n";
+        return;
+    }
+
+    vector<pair<int, EggRecord>> indexedRecords;
+    for (size_t i = 0; i < eggRecords.size(); i++) {
+        indexedRecords.push_back(make_pair(static_cast<int>(i), eggRecords[i]));
+    }
+
+    sort(indexedRecords.begin(), indexedRecords.end(),
+        [this](const pair<int, EggRecord>& a, const pair<int, EggRecord>& b) {
+            return dateToSortableValue(a.second.getDate()) < dateToSortableValue(b.second.getDate());
+        });
+
+    printSectionHeader("EGG RECORDS");
+    for (size_t i = 0; i < indexedRecords.size(); i++) {
+        cout << i + 1 << ". "
+            << indexedRecords[i].second.getDate() << " | Count: "
+            << indexedRecords[i].second.getEggCount() << " | Notes: "
+            << indexedRecords[i].second.getNotes() << "\n";
+    }
+
+    int choice = getValidatedInt("Select egg record: ", 1, static_cast<int>(indexedRecords.size()));
+    int originalIndex = indexedRecords[choice - 1].first;
+
+    string date = promptForDate("New date (MM/DD/YYYY): ");
+    int count = getValidatedInt("New count: ", 0, 1000000);
+    string notes = getLineInput("New notes: ");
+
+    eggRecords[originalIndex].setDate(date);
+    eggRecords[originalIndex].setEggCount(count);
+    eggRecords[originalIndex].setNotes(notes);
+
+    saveEggRecordsToTxt();
+    cout << "Egg record updated.\n";
+}
+
+void CoopTracker::deleteEggRecord() {
+    if (eggRecords.empty()) {
+        cout << "No egg records to delete.\n";
+        return;
+    }
+
+    vector<pair<int, EggRecord>> indexedRecords;
+    for (size_t i = 0; i < eggRecords.size(); i++) {
+        indexedRecords.push_back(make_pair(static_cast<int>(i), eggRecords[i]));
+    }
+
+    sort(indexedRecords.begin(), indexedRecords.end(),
+        [this](const pair<int, EggRecord>& a, const pair<int, EggRecord>& b) {
+            return dateToSortableValue(a.second.getDate()) < dateToSortableValue(b.second.getDate());
+        });
+
+    printSectionHeader("EGG RECORDS");
+    for (size_t i = 0; i < indexedRecords.size(); i++) {
+        cout << i + 1 << ". "
+            << indexedRecords[i].second.getDate() << " | Count: "
+            << indexedRecords[i].second.getEggCount() << " | Notes: "
+            << indexedRecords[i].second.getNotes() << "\n";
+    }
+
+    int choice = getValidatedInt("Select egg record to delete: ", 1, static_cast<int>(indexedRecords.size()));
+    int originalIndex = indexedRecords[choice - 1].first;
+
+    eggRecords.erase(eggRecords.begin() + originalIndex);
+    saveEggRecordsToTxt();
+
+    cout << "Egg record deleted.\n";
+}
+
+// ================= HEALTH NOTES =================
+void CoopTracker::healthMenu() {
+    int choice;
+    do {
+        printSectionHeader("HEALTH NOTES");
+        cout << "1. Add\n";
+        cout << "2. View\n";
+        cout << "3. Edit\n";
+        cout << "4. Delete\n";
+        cout << "5. Back\n";
+
+        choice = getValidatedInt("Choice: ", 1, 5);
+
+        switch (choice) {
+        case 1: addHealthNote(); break;
+        case 2: viewHealthNotes(); break;
+        case 3: editHealthNote(); break;
+        case 4: deleteHealthNote(); break;
+        }
+    } while (choice != 5);
+}
+
+void CoopTracker::addHealthNote() {
+    printSectionHeader("ADD HEALTH NOTE");
+
+    string date = promptForDate("Date (MM/DD/YYYY): ");
+    string chickenName = getLineInput("Chicken name: ");
+    string note = getLineInput("Note: ");
+
+    healthNotes.push_back(HealthNote(date, chickenName, note));
+    saveHealthNotesToTxt();
+
+    cout << "Health note added.\n";
+}
+
+void CoopTracker::viewHealthNotes() const {
+    if (healthNotes.empty()) {
+        printSectionHeader("HEALTH NOTES");
+        cout << "No health notes found.\n";
+        return;
+    }
+
+    printSectionHeader("VIEW HEALTH NOTES");
+    cout << "1. View All\n";
+    cout << "2. View By Month\n";
+    int option = getValidatedInt("Choice: ", 1, 2);
+
+    if (option == 1) {
+        printSectionHeader("HEALTH NOTES - ALL");
+        cout << "Note Count: " << healthNotes.size() << "\n\n";
+        printHealthNoteList(healthNotes);
+    }
+    else {
+        int month = getValidatedInt("Enter month (1-12): ", 1, 12);
+        int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+        vector<HealthNote> filtered;
+        for (const auto& note : healthNotes) {
+            if (isDateInMonthYear(note.getDate(), month, year)) {
+                filtered.push_back(note);
+            }
+        }
+
+        printSectionHeader("HEALTH NOTES - " + monthYearLabel(month, year));
+
+        if (filtered.empty()) {
+            cout << "No health notes found for this month.\n";
+            return;
+        }
+
+        cout << "Note Count: " << filtered.size() << "\n\n";
+        printHealthNoteList(filtered);
+    }
+}
+
+void CoopTracker::editHealthNote() {
+    if (healthNotes.empty()) {
+        cout << "No health notes to edit.\n";
+        return;
+    }
+
+    printSectionHeader("HEALTH NOTES");
+    printHealthNoteList(healthNotes);
+
+    int choice = getValidatedInt("Select health note: ", 1, static_cast<int>(healthNotes.size()));
+
+    string date = promptForDate("New date (MM/DD/YYYY): ");
+    string name = getLineInput("New chicken: ");
+    string note = getLineInput("New note: ");
+
+    healthNotes[choice - 1].setDate(date);
+    healthNotes[choice - 1].setChickenName(name);
+    healthNotes[choice - 1].setNote(note);
+
+    saveHealthNotesToTxt();
+    cout << "Health note updated.\n";
+}
+
+void CoopTracker::deleteHealthNote() {
+    if (healthNotes.empty()) {
+        cout << "No health notes to delete.\n";
+        return;
+    }
+
+    printSectionHeader("HEALTH NOTES");
+    printHealthNoteList(healthNotes);
+
+    int choice = getValidatedInt("Select health note to delete: ", 1, static_cast<int>(healthNotes.size()));
+    healthNotes.erase(healthNotes.begin() + (choice - 1));
+    saveHealthNotesToTxt();
+
+    cout << "Health note deleted.\n";
+}
+
+// ================= CLEANING RECORDS =================
+void CoopTracker::cleaningMenu() {
+    int choice;
+    do {
+        printSectionHeader("CLEANING RECORDS");
+        cout << "1. Add\n";
+        cout << "2. View\n";
+        cout << "3. Edit\n";
+        cout << "4. Delete\n";
+        cout << "5. Back\n";
+
+        choice = getValidatedInt("Choice: ", 1, 5);
+
+        switch (choice) {
+        case 1: addCleaningRecord(); break;
+        case 2: viewCleaningRecords(); break;
+        case 3: editCleaningRecord(); break;
+        case 4: deleteCleaningRecord(); break;
+        }
+    } while (choice != 5);
+}
+
+void CoopTracker::addCleaningRecord() {
+    printSectionHeader("ADD CLEANING RECORD");
+
+    string date = promptForDate("Date (MM/DD/YYYY): ");
+    string task = getLineInput("Task: ");
+    string notes = getLineInput("Notes: ");
+
+    cleaningRecords.push_back(CleaningRecord(date, task, notes));
+    saveCleaningRecordsToTxt();
+
+    cout << "Cleaning record added.\n";
+}
+
+void CoopTracker::viewCleaningRecords() const {
+    if (cleaningRecords.empty()) {
+        printSectionHeader("CLEANING RECORDS");
+        cout << "No cleaning records found.\n";
+        return;
+    }
+
+    printSectionHeader("VIEW CLEANING RECORDS");
+    cout << "1. View All\n";
+    cout << "2. View By Month\n";
+    int option = getValidatedInt("Choice: ", 1, 2);
+
+    if (option == 1) {
+        printSectionHeader("CLEANING RECORDS - ALL");
+        cout << "Cleaning Count: " << cleaningRecords.size() << "\n\n";
+        printCleaningRecordList(cleaningRecords);
+    }
+    else {
+        int month = getValidatedInt("Enter month (1-12): ", 1, 12);
+        int year = getValidatedInt("Enter year: ", 1900, 3000);
+
+        vector<CleaningRecord> filtered;
+        for (const auto& record : cleaningRecords) {
+            if (isDateInMonthYear(record.getDate(), month, year)) {
+                filtered.push_back(record);
+            }
+        }
+
+        printSectionHeader("CLEANING RECORDS - " + monthYearLabel(month, year));
+
+        if (filtered.empty()) {
+            cout << "No cleaning records found for this month.\n";
+            return;
+        }
+
+        cout << "Cleaning Count: " << filtered.size() << "\n\n";
+        printCleaningRecordList(filtered);
+    }
+}
+
+void CoopTracker::editCleaningRecord() {
+    if (cleaningRecords.empty()) {
+        cout << "No cleaning records to edit.\n";
+        return;
+    }
+
+    printSectionHeader("CLEANING RECORDS");
+    printCleaningRecordList(cleaningRecords);
+
+    int choice = getValidatedInt("Select cleaning record: ", 1, static_cast<int>(cleaningRecords.size()));
+
+    string date = promptForDate("New date (MM/DD/YYYY): ");
+    string task = getLineInput("New task: ");
+    string notes = getLineInput("New notes: ");
+
+    cleaningRecords[choice - 1].setDate(date);
+    cleaningRecords[choice - 1].setTask(task);
+    cleaningRecords[choice - 1].setNotes(notes);
+
+    saveCleaningRecordsToTxt();
+    cout << "Cleaning record updated.\n";
+}
+
+void CoopTracker::deleteCleaningRecord() {
+    if (cleaningRecords.empty()) {
+        cout << "No cleaning records to delete.\n";
+        return;
+    }
+
+    printSectionHeader("CLEANING RECORDS");
+    printCleaningRecordList(cleaningRecords);
+
+    int choice = getValidatedInt("Select cleaning record to delete: ", 1, static_cast<int>(cleaningRecords.size()));
+    cleaningRecords.erase(cleaningRecords.begin() + (choice - 1));
+    saveCleaningRecordsToTxt();
+
+    cout << "Cleaning record deleted.\n";
+}

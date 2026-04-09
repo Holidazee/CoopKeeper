@@ -1,0 +1,20 @@
+Goldie|Buff Orpington|18|Friendly and calm hen
+Hazel|Rhode Island Red|24|Top egg layer
+Dot|Barred Rock|14|Very curious
+Sunny|Leghorn|10|Active and noisy
+Maple|Australorp|20|Gets along with the flock
+Clover|Easter Egger|16|Lays green eggs
+Pepper|Black Star|22|Very hardy bird
+Ruby|Rhode Island Red|19|Bossy with others
+Luna|Silkie|12|Very fluffy and calm
+Daisy|Wyandotte|17|Beautiful feathers
+Olive|Olive Egger|15|Dark green eggs
+Penny|Plymouth Rock|21|Consistent layer
+Nugget|Buff Orpington|11|Young pullet
+Willow|Leghorn|13|Fast and alert
+Scarlet|Australorp|18|Quiet temperament
+Misty|Easter Egger|14|Shy but friendly
+Bluebell|Orpington|20|Large bird
+Ginger|Rhode Island Red|23|Strong layer
+Snowy|Leghorn|9|White feathers
+Ash|Barred Rock|16|Balanced temperament
