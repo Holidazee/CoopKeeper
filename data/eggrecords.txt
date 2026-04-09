@@ -1,25 +1,26 @@
-2026-04-09,16,Strong spring production
-2026-03-25,15,Consistent
-2026-03-10,14,Improving after winter
-2026-02-25,11,Still recovering
-2026-02-10,10,Cold weather
-2026-01-25,9,Winter low
-2026-01-10,8,Very cold
-2025-12-25,9,Holiday week
-2025-12-10,10,Low daylight
-2025-11-25,12,Picking up
-2025-11-10,13,Good production
-2025-10-25,15,Strong fall output
-2025-10-10,16,Near peak
-2025-09-25,17,Peak production
-2025-09-10,18,Best output
-2025-08-25,17,Hot but steady
-2025-08-10,16,Heat impact
-2025-07-25,15,Summer slowdown
-2025-07-10,14,Heat stress
-2025-06-25,16,Strong
-2025-06-10,17,Near peak
-2025-05-25,18,Excellent
-2025-05-10,17,Very strong
-2025-04-25,16,Spring ramp up
-2025-04-09,15,Start of cycle
+04/09/2026|16|Strong spring production
+03/25/2026|15|Consistent
+03/10/2026|14|Improving after winter
+02/25/2026|11|Still recovering
+02/10/2026|10|Cold weather
+01/25/2026|9|Winter low
+01/10/2026|8|Very cold
+12/25/2025|9|Holiday week
+12/10/2025|10|Low daylight
+11/25/2025|12|Picking up
+11/10/2025|13|Good production
+10/25/2025|15|Strong fall output
+10/10/2025|16|Near peak
+09/25/2025|17|Peak production
+09/10/2025|18|Best output
+08/25/2025|17|Hot but steady
+08/10/2025|16|Heat impact
+07/25/2025|15|Summer slowdown
+07/10/2025|14|Heat stress
+06/25/2025|16|Strong
+06/10/2025|17|Near peak
+05/25/2025|18|Excellent
+05/10/2025|17|Very strong
+04/25/2025|16|Spring ramp up
+04/09/2025|15|Start of cycle
+04/10/2025|16|Good Output

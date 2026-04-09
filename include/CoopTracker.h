@@ -58,17 +58,24 @@ private:
     bool parseDate(const string& date, int& month, int& day, int& year) const;
     bool isDateInMonthYear(const string& date, int month, int year) const;
     bool isDateInYear(const string& date, int year) const;
+    bool isDateInRange(const string& date, const string& startDate, const string& endDate) const;
     int dateToSortableValue(const string& date) const;
     string monthYearLabel(int month, int year) const;
     int getCurrentMonth() const;
     int getCurrentYear() const;
     string getLastCleaningDate() const;
 
+    int getDaysBetween(const string& earlierDate, const string& laterDate) const;
+    int getDaysSinceDate(const string& date) const;
+
     // Dashboard / reports
     void showStartupStatus() const;
     void showDashboard() const;
+    void showInsights() const;
+    void showAlerts() const;
     void showMonthlyReport() const;
     void showYearlyReport() const;
+    void showDateRangeReport() const;
 
     // Summary helpers
     double getExpenseTotalForMonth(int month, int year) const;
@@ -79,6 +86,7 @@ private:
 
     int getEggTotalForMonth(int month, int year) const;
     int getEggTotalForYear(int year) const;
+    int getEggTotalForDate(const string& date) const;
 
     int getHealthCountForMonth(int month, int year) const;
     int getHealthCountForYear(int year) const;
@@ -90,6 +98,10 @@ private:
     double getCostPerDozenForMonth(int month, int year) const;
     double getCostPerEggForYear(int year) const;
     double getCostPerDozenForYear(int year) const;
+
+    double getAverageEggsPerDayForMonth(int month, int year) const;
+    string getBestProductionDayForMonth(int month, int year) const;
+    double getProductionChangePercentFromPreviousMonth(int month, int year) const;
 
     // Display helpers
     void printFeedRecordList(const vector<FeedRecord>& records) const;

@@ -1,24 +1,24 @@
-2026-04-07,Full coop clean
-2026-03-21,Deep clean
-2026-03-01,Light clean
-2026-02-15,Full clean
-2026-01-30,Quick refresh
-2026-01-10,Deep clean
-2025-12-26,Full clean
-2025-12-08,Deep clean
-2025-11-20,Full clean
-2025-11-01,Light clean
-2025-10-18,Deep clean
-2025-10-05,Full clean
-2025-09-20,Deep clean
-2025-09-01,Light clean
-2025-08-18,Full clean
-2025-08-01,Deep clean
-2025-07-20,Full clean
-2025-07-01,Light clean
-2025-06-18,Deep clean
-2025-06-01,Full clean
-2025-05-18,Deep clean
-2025-05-01,Light clean
-2025-04-18,Full clean
-2025-04-05,Deep clean
+04/07/2026|Full coop clean|Fresh bedding added
+03/21/2026|Deep clean|Scrubbed roosts and nesting boxes
+03/01/2026|Light clean|Removed droppings and refreshed bedding
+02/15/2026|Full clean|Washed waterers and feeder area
+01/30/2026|Quick refresh|Topped off bedding
+01/10/2026|Deep clean|Winter sanitation
+12/26/2025|Full clean|Post-holiday cleanup
+12/08/2025|Deep clean|Cleaned nesting boxes
+11/20/2025|Full clean|General coop reset
+11/01/2025|Light clean|Bedding refresh
+10/18/2025|Deep clean|Fall cleanup
+10/05/2025|Full clean|Full floor and roost cleaning
+09/20/2025|Deep clean|Cleaned vents and nesting area
+09/01/2025|Light clean|Quick tidy up
+08/18/2025|Full clean|Summer sanitation
+08/01/2025|Deep clean|Washed all surfaces
+07/20/2025|Full clean|Hot weather cleanup
+07/01/2025|Light clean|Refreshed bedding
+06/18/2025|Deep clean|Scrubbed feeder and water station
+06/01/2025|Full clean|Monthly reset
+05/18/2025|Deep clean|Spring sanitation
+05/01/2025|Light clean|Spot clean and bedding top-off
+04/18/2025|Full clean|Season opening cleanup
+04/05/2025|Deep clean|Initial deep clean

@@ -6,6 +6,8 @@
 #include <limits>
 #include <ctime>
 #include <algorithm>
+#include <map>
+#include <cmath>
 
 using namespace std;
 
@@ -103,6 +105,18 @@ bool CoopTracker::isDateInYear(const string& date, int year) const {
     return y == year;
 }
 
+bool CoopTracker::isDateInRange(const string& date, const string& startDate, const string& endDate) const {
+    int dateValue = dateToSortableValue(date);
+    int startValue = dateToSortableValue(startDate);
+    int endValue = dateToSortableValue(endDate);
+
+    if (dateValue == 0 || startValue == 0 || endValue == 0) {
+        return false;
+    }
+
+    return dateValue >= startValue && dateValue <= endValue;
+}
+
 int CoopTracker::dateToSortableValue(const string& date) const {
     int m, d, y;
     if (!parseDate(date, m, d, y)) return 0;
@@ -161,6 +175,72 @@ string CoopTracker::getLastCleaningDate() const {
     }
 
     return latestDate;
+}
+
+int CoopTracker::getDaysBetween(const string& earlierDate, const string& laterDate) const {
+    int m1, d1, y1;
+    int m2, d2, y2;
+
+    if (!parseDate(earlierDate, m1, d1, y1) || !parseDate(laterDate, m2, d2, y2)) {
+        return -1;
+    }
+
+    tm first{};
+    first.tm_year = y1 - 1900;
+    first.tm_mon = m1 - 1;
+    first.tm_mday = d1;
+    first.tm_hour = 12;
+
+    tm second{};
+    second.tm_year = y2 - 1900;
+    second.tm_mon = m2 - 1;
+    second.tm_mday = d2;
+    second.tm_hour = 12;
+
+    time_t t1 = mktime(&first);
+    time_t t2 = mktime(&second);
+
+    if (t1 == -1 || t2 == -1) {
+        return -1;
+    }
+
+    double diffSeconds = difftime(t2, t1);
+    return static_cast<int>(diffSeconds / (60 * 60 * 24));
+}
+
+int CoopTracker::getDaysSinceDate(const string& date) const {
+    int m, d, y;
+    if (!parseDate(date, m, d, y)) {
+        return -1;
+    }
+
+    time_t now = time(nullptr);
+    tm today{};
+#ifdef _WIN32
+    localtime_s(&today, &now);
+#else
+    today = *localtime(&now);
+#endif
+
+    tm past{};
+    past.tm_year = y - 1900;
+    past.tm_mon = m - 1;
+    past.tm_mday = d;
+    past.tm_hour = 12;
+
+    today.tm_hour = 12;
+    today.tm_min = 0;
+    today.tm_sec = 0;
+
+    time_t pastTime = mktime(&past);
+    time_t todayTime = mktime(&today);
+
+    if (pastTime == -1 || todayTime == -1) {
+        return -1;
+    }
+
+    double diffSeconds = difftime(todayTime, pastTime);
+    return static_cast<int>(diffSeconds / (60 * 60 * 24));
 }
 
 // ================= LOAD / SAVE ALL =================
@@ -533,10 +613,10 @@ void CoopTracker::showDashboard() const {
     cout << "Feed Cost (This Month):    $" << feedTotal << "\n";
     cout << "Total Expenses (Month):    $" << expenseTotal << "\n";
     if (eggTotalMonth > 0) {
-        cout << "Estimated Cost/Dozen:      $" << costPerDozen << "\n";
+        cout << "Cost per Dozen (Est.):     $" << costPerDozen << "\n";
     }
     else {
-        cout << "Estimated Cost/Dozen:      N/A\n";
+        cout << "Cost per Dozen (Est.):     N/A\n";
     }
 
     cout << "\n--- FEED ---\n";
@@ -582,6 +662,110 @@ void CoopTracker::showDashboard() const {
     cout << "\n-------------------------------------------\n";
     cout << "Status: " << status << "\n";
     cout << "-------------------------------------------\n";
+}
+
+void CoopTracker::showInsights() const {
+    int month = getCurrentMonth();
+    int year = getCurrentYear();
+
+    double avgEggsPerDay = getAverageEggsPerDayForMonth(month, year);
+    double costPerEgg = getCostPerEggForMonth(month, year);
+    string bestDay = getBestProductionDayForMonth(month, year);
+    double productionChange = getProductionChangePercentFromPreviousMonth(month, year);
+
+    cout << "\n--- INSIGHTS ---\n";
+    cout << fixed << setprecision(2);
+
+    cout << "Average Eggs/Day:          " << avgEggsPerDay << "\n";
+    if (getEggTotalForMonth(month, year) > 0) {
+        cout << "Cost Per Egg:              $" << costPerEgg << "\n";
+    }
+    else {
+        cout << "Cost Per Egg:              N/A\n";
+    }
+    cout << "Best Production Day:       " << bestDay << "\n";
+
+    if (productionChange > 0.0) {
+        cout << "Vs Last Month:             +" << productionChange << "%\n";
+    }
+    else if (productionChange < 0.0) {
+        cout << "Vs Last Month:             " << productionChange << "%\n";
+    }
+    else {
+        cout << "Vs Last Month:             0.00%\n";
+    }
+}
+
+void CoopTracker::showAlerts() const {
+    printSectionHeader("ALERTS");
+
+    bool hasAlerts = false;
+
+    if (!eggRecords.empty()) {
+        string latestEggDate = eggRecords[0].getDate();
+        int latestEggValue = dateToSortableValue(latestEggDate);
+
+        for (size_t i = 1; i < eggRecords.size(); i++) {
+            int value = dateToSortableValue(eggRecords[i].getDate());
+            if (value > latestEggValue) {
+                latestEggValue = value;
+                latestEggDate = eggRecords[i].getDate();
+            }
+        }
+
+        int daysSinceEgg = getDaysSinceDate(latestEggDate);
+        if (daysSinceEgg >= 3) {
+            cout << "- No eggs recorded in " << daysSinceEgg << " days.\n";
+            hasAlerts = true;
+        }
+    }
+
+    if (!cleaningRecords.empty()) {
+        string latestCleaningDate = cleaningRecords[0].getDate();
+        int latestCleaningValue = dateToSortableValue(latestCleaningDate);
+
+        for (size_t i = 1; i < cleaningRecords.size(); i++) {
+            int value = dateToSortableValue(cleaningRecords[i].getDate());
+            if (value > latestCleaningValue) {
+                latestCleaningValue = value;
+                latestCleaningDate = cleaningRecords[i].getDate();
+            }
+        }
+
+        int daysSinceCleaning = getDaysSinceDate(latestCleaningDate);
+        if (daysSinceCleaning >= 14) {
+            cout << "- No cleaning logged in " << daysSinceCleaning << " days.\n";
+            hasAlerts = true;
+        }
+    }
+    else {
+        cout << "- No cleaning records have been logged yet.\n";
+        hasAlerts = true;
+    }
+
+    int currentMonth = getCurrentMonth();
+    int currentYear = getCurrentYear();
+    int previousMonth = currentMonth - 1;
+    int previousYear = currentYear;
+
+    if (previousMonth == 0) {
+        previousMonth = 12;
+        previousYear--;
+    }
+
+    double currentFeed = getFeedCostTotalForMonth(currentMonth, currentYear);
+    double previousFeed = getFeedCostTotalForMonth(previousMonth, previousYear);
+
+    if (previousFeed > 0.0 && currentFeed > previousFeed) {
+        double increasePercent = ((currentFeed - previousFeed) / previousFeed) * 100.0;
+        cout << fixed << setprecision(2);
+        cout << "- Feed spending is up " << increasePercent << "% vs last month.\n";
+        hasAlerts = true;
+    }
+
+    if (!hasAlerts) {
+        cout << "No alerts right now.\n";
+    }
 }
 
 void CoopTracker::showMonthlyReport() const {
@@ -645,6 +829,102 @@ void CoopTracker::showYearlyReport() const {
     }
 }
 
+void CoopTracker::showDateRangeReport() const {
+    printSectionHeader("DATE RANGE REPORT");
+
+    string startDate = promptForDate("Enter start date (MM/DD/YYYY): ");
+    string endDate = promptForDate("Enter end date (MM/DD/YYYY): ");
+
+    int sm, sd, sy, em, ed, ey;
+    if (!parseDate(startDate, sm, sd, sy) || !parseDate(endDate, em, ed, ey)) {
+        cout << "Invalid date format. Please use MM/DD/YYYY.\n";
+        return;
+    }
+
+    if (dateToSortableValue(startDate) > dateToSortableValue(endDate)) {
+        cout << "Start date must be before or equal to end date.\n";
+        return;
+    }
+
+    int eggTotal = 0;
+    double expenseTotal = 0.0;
+    double feedTotal = 0.0;
+    int healthCount = 0;
+    int cleaningCount = 0;
+    map<string, int> eggTotalsByDate;
+
+    for (const auto& record : eggRecords) {
+        if (isDateInRange(record.getDate(), startDate, endDate)) {
+            eggTotal += record.getEggCount();
+            eggTotalsByDate[record.getDate()] += record.getEggCount();
+        }
+    }
+
+    for (const auto& expense : expenses) {
+        if (isDateInRange(expense.getDate(), startDate, endDate)) {
+            expenseTotal += expense.getAmount();
+        }
+    }
+
+    for (const auto& record : feedRecords) {
+        if (isDateInRange(record.getDate(), startDate, endDate)) {
+            feedTotal += record.getCost();
+        }
+    }
+
+    for (const auto& note : healthNotes) {
+        if (isDateInRange(note.getDate(), startDate, endDate)) {
+            healthCount++;
+        }
+    }
+
+    for (const auto& record : cleaningRecords) {
+        if (isDateInRange(record.getDate(), startDate, endDate)) {
+            cleaningCount++;
+        }
+    }
+
+    int daysInRange = getDaysBetween(startDate, endDate) + 1;
+    if (daysInRange < 1) {
+        daysInRange = 1;
+    }
+
+    double averageEggsPerDay = static_cast<double>(eggTotal) / daysInRange;
+    double totalCost = expenseTotal + feedTotal;
+    double costPerEgg = (eggTotal > 0) ? totalCost / eggTotal : 0.0;
+    double costPerDozen = costPerEgg * 12.0;
+
+    string bestDay = "N/A";
+    int bestDayCount = -1;
+    for (const auto& entry : eggTotalsByDate) {
+        if (entry.second > bestDayCount) {
+            bestDayCount = entry.second;
+            bestDay = entry.first + " (" + to_string(entry.second) + " eggs)";
+        }
+    }
+
+    cout << fixed << setprecision(2);
+    cout << "Range: " << startDate << " to " << endDate << "\n";
+    cout << "Days in Range: " << daysInRange << "\n";
+    cout << "Eggs Collected: " << eggTotal << "\n";
+    cout << "Average Eggs/Day: " << averageEggsPerDay << "\n";
+    cout << "Feed Cost: $" << feedTotal << "\n";
+    cout << "Expenses: $" << expenseTotal << "\n";
+    cout << "Health Notes: " << healthCount << "\n";
+    cout << "Cleaning Records: " << cleaningCount << "\n";
+
+    if (eggTotal > 0) {
+        cout << "Cost Per Egg: $" << costPerEgg << "\n";
+        cout << "Cost Per Dozen: $" << costPerDozen << "\n";
+    }
+    else {
+        cout << "Cost Per Egg: N/A\n";
+        cout << "Cost Per Dozen: N/A\n";
+    }
+
+    cout << "Best Production Day: " << bestDay << "\n";
+}
+
 // ================= SUMMARY HELPERS =================
 double CoopTracker::getExpenseTotalForMonth(int month, int year) const {
     double total = 0.0;
@@ -700,6 +980,16 @@ int CoopTracker::getEggTotalForYear(int year) const {
     int total = 0;
     for (const auto& record : eggRecords) {
         if (isDateInYear(record.getDate(), year)) {
+            total += record.getEggCount();
+        }
+    }
+    return total;
+}
+
+int CoopTracker::getEggTotalForDate(const string& date) const {
+    int total = 0;
+    for (const auto& record : eggRecords) {
+        if (record.getDate() == date) {
             total += record.getEggCount();
         }
     }
@@ -770,6 +1060,75 @@ double CoopTracker::getCostPerDozenForYear(int year) const {
     return getCostPerEggForYear(year) * 12.0;
 }
 
+double CoopTracker::getAverageEggsPerDayForMonth(int month, int year) const {
+    map<string, int> dailyEggTotals;
+
+    for (const auto& record : eggRecords) {
+        if (isDateInMonthYear(record.getDate(), month, year)) {
+            dailyEggTotals[record.getDate()] += record.getEggCount();
+        }
+    }
+
+    if (dailyEggTotals.empty()) {
+        return 0.0;
+    }
+
+    int totalEggs = 0;
+    for (const auto& entry : dailyEggTotals) {
+        totalEggs += entry.second;
+    }
+
+    return static_cast<double>(totalEggs) / dailyEggTotals.size();
+}
+
+string CoopTracker::getBestProductionDayForMonth(int month, int year) const {
+    map<string, int> dailyEggTotals;
+
+    for (const auto& record : eggRecords) {
+        if (isDateInMonthYear(record.getDate(), month, year)) {
+            dailyEggTotals[record.getDate()] += record.getEggCount();
+        }
+    }
+
+    if (dailyEggTotals.empty()) {
+        return "N/A";
+    }
+
+    string bestDate = "";
+    int bestCount = -1;
+
+    for (const auto& entry : dailyEggTotals) {
+        if (entry.second > bestCount) {
+            bestCount = entry.second;
+            bestDate = entry.first;
+        }
+    }
+
+    return bestDate + " (" + to_string(bestCount) + " eggs)";
+}
+
+double CoopTracker::getProductionChangePercentFromPreviousMonth(int month, int year) const {
+    int previousMonth = month - 1;
+    int previousYear = year;
+
+    if (previousMonth == 0) {
+        previousMonth = 12;
+        previousYear--;
+    }
+
+    int currentTotal = getEggTotalForMonth(month, year);
+    int previousTotal = getEggTotalForMonth(previousMonth, previousYear);
+
+    if (previousTotal == 0) {
+        if (currentTotal == 0) {
+            return 0.0;
+        }
+        return 100.0;
+    }
+
+    return ((static_cast<double>(currentTotal - previousTotal) / previousTotal) * 100.0);
+}
+
 // ================= DISPLAY HELPERS =================
 void CoopTracker::printFeedRecordList(const vector<FeedRecord>& records) const {
     for (size_t i = 0; i < records.size(); i++) {
@@ -830,6 +1189,8 @@ void CoopTracker::run() {
     loadAllData();
     showStartupStatus();
     showDashboard();
+    showInsights();
+    showAlerts();
     pauseForEnter();
 
     int choice;
@@ -847,10 +1208,11 @@ void CoopTracker::run() {
         cout << "6. Cleaning Records\n";
         cout << "7. Monthly Report\n";
         cout << "8. Yearly Report\n";
-        cout << "9. Export All to CSV\n";
-        cout << "10. Exit\n";
+        cout << "9. Date Range Report\n";
+        cout << "10. Export All to CSV\n";
+        cout << "11. Exit\n";
 
-        choice = getValidatedInt("Choice: ", 1, 10);
+        choice = getValidatedInt("Choice: ", 1, 11);
 
         switch (choice) {
         case 1: chickenMenu(); break;
@@ -861,16 +1223,17 @@ void CoopTracker::run() {
         case 6: cleaningMenu(); break;
         case 7: showMonthlyReport(); break;
         case 8: showYearlyReport(); break;
-        case 9:
+        case 9: showDateRangeReport(); break;
+        case 10:
             exportAllToCSV();
             cout << "All CSV exports created in exports folder.\n";
             break;
-        case 10:
+        case 11:
             saveAllData();
             cout << "Goodbye.\n";
             break;
         }
-    } while (choice != 10);
+    } while (choice != 11);
 }
 
 // ================= CHICKENS =================
