@@ -207,3 +207,7 @@ https://github.com/Holidazee
 MIT License (recommended)
 
 ---
+
+## 🧪 Sample Use Case
+
+Track daily egg production, monitor feed costs, and calculate cost per dozen eggs over time — ideal for backyard chicken owners.
