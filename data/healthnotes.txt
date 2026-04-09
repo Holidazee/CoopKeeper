@@ -1,13 +1,13 @@
-2026-04-02,Ruby minor pecking issue,Separated briefly
-2026-03-10,General check,Healthy flock
-2026-02-22,Sunny slight lethargy,Recovered
-2026-01-25,Winter check,All good
-2025-12-18,Cold stress observed,Improved
-2025-11-10,Routine check,Healthy
-2025-10-12,Seasonal molt start,Normal
-2025-09-15,Full inspection,Excellent
-2025-08-10,Heat stress monitored,Stable
-2025-07-05,Hydration check,Good
-2025-06-10,Routine health check,Healthy
-2025-05-05,Spring check,Excellent
-2025-04-10,Initial yearly check,All good
+04/02/2026|Ruby|Minor pecking issue, separated briefly
+03/10/2026|Flock|General check, healthy flock
+02/22/2026|Sunny|Slight lethargy, recovered
+01/25/2026|Flock|Winter check, all good
+12/18/2025|Flock|Cold stress observed, improved
+11/10/2025|Flock|Routine check, healthy
+10/12/2025|Flock|Seasonal molt start, normal
+09/15/2025|Flock|Full inspection, excellent
+08/10/2025|Flock|Heat stress monitored, stable
+07/05/2025|Flock|Hydration check, good
+06/10/2025|Flock|Routine health check, healthy
+05/05/2025|Flock|Spring check, excellent
+04/10/2025|Flock|Initial yearly check, all good
