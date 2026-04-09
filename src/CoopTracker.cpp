@@ -39,15 +39,15 @@ namespace UI {
     }
 
     string success(const string& message) {
-        return ANSI::GREEN + "✔ " + message + ANSI::RESET;
+        return ANSI::GREEN + "[OK] " + message + ANSI::RESET;
     }
 
     string error(const string& message) {
-        return ANSI::RED + "✖ " + message + ANSI::RESET;
+        return ANSI::RED + "[ERROR] " + message + ANSI::RESET;
     }
 
     string warning(const string& message) {
-        return ANSI::YELLOW + "⚠ " + message + ANSI::RESET;
+        return ANSI::YELLOW + "[WARNING] " + message + ANSI::RESET;
     }
 
     string value(const string& message) {
@@ -596,12 +596,12 @@ void CoopTracker::exportAllToCSV() const {
 void CoopTracker::showStartupStatus() const {
     printSectionHeader("DATA LOAD STATUS");
     cout << ANSI::DIM << "Loaded successfully:" << ANSI::RESET << "\n";
-    cout << "  • Chickens:         " << UI::value(to_string(chickens.size())) << "\n";
-    cout << "  • Feed records:     " << UI::value(to_string(feedRecords.size())) << "\n";
-    cout << "  • Expenses:         " << UI::value(to_string(expenses.size())) << "\n";
-    cout << "  • Egg records:      " << UI::value(to_string(eggRecords.size())) << "\n";
-    cout << "  • Health notes:     " << UI::value(to_string(healthNotes.size())) << "\n";
-    cout << "  • Cleaning records: " << UI::value(to_string(cleaningRecords.size())) << "\n";
+    cout << "  - Chickens:         " << UI::value(to_string(chickens.size())) << "\n";
+    cout << "  - Feed records:     " << UI::value(to_string(feedRecords.size())) << "\n";
+    cout << "  - Expenses:         " << UI::value(to_string(expenses.size())) << "\n";
+    cout << "  - Egg records:      " << UI::value(to_string(eggRecords.size())) << "\n";
+    cout << "  - Health notes:     " << UI::value(to_string(healthNotes.size())) << "\n";
+    cout << "  - Cleaning records: " << UI::value(to_string(cleaningRecords.size())) << "\n";
 }
 
 void CoopTracker::showDashboard() const {
@@ -701,7 +701,7 @@ void CoopTracker::showDashboard() const {
     cout << "Last Cleaning Date:       " << UI::value(getLastCleaningDate()) << "\n\n";
 
     UI::printDivider();
-    cout << ANSI::BOLD << ANSI::MAGENTA << "Status: " << ANSI::RESET << UI::value(status) << "\n";
+    cout << ANSI::BOLD << ANSI::MAGENTA << "STATUS: " << ANSI::RESET << UI::value(status) << "\n";
     UI::printDivider();
 }
 
