@@ -1,6 +1,6 @@
 # 🐔 CoopKeeper CLI
 
-A practical **C++ console application** for managing your chicken coop operations — track egg production, feed usage, expenses, health notes, and cleaning records with persistent storage and CSV export.
+A practical **C++ CLI application** for managing chicken coop operations, including egg production, feed tracking, expenses, health logs, and cleaning records.
 
 ---
 
@@ -49,6 +49,26 @@ A practical **C++ console application** for managing your chicken coop operation
 
 ---
 
+## 📸 Screenshots
+
+### Dashboard
+
+![Dashboard](screenshots/Dashboard.png)
+
+### Egg Records
+
+![Egg Records](screenshots/EggRecords.png)
+
+### Add Egg Entry
+
+![Add Egg](screenshots/addegg.png)
+
+### CSV Export Confirmation
+
+![CSV Export](screenshots/csvconfirm.png)
+
+---
+
 ## 🛠️ Tech Stack
 
 * C++
@@ -76,26 +96,6 @@ CoopKeeper-CLI/
 
 ---
 
-## 📸 Screenshots
-
-### Dashboard
-
-![Dashboard](screenshots/Dashboard.png)
-
-### Egg Records
-
-![Egg Records](screenshots/EggRecords.png)
-
-### Add Egg Entry
-
-![Add Egg](screenshots/addegg.png)
-
-### CSV Export Confirmation
-
-![CSV Export](screenshots/csvconfirm.png)
-
----
-
 ## ⚙️ Setup & Run
 
 ### 1. Clone the repository
@@ -110,18 +110,16 @@ cd CoopKeeper-CLI
 * Open `CoopKeeper.sln`
 * Build and run (`Ctrl + F5`)
 
-### 3. Important (Visual Studio users)
+### 3. Visual Studio Note
 
-For file persistence to work correctly:
-
-Ensure these folders exist in your build directory:
+*When running from Visual Studio, ensure these folders exist in your build directory:*
 
 ```
 x64/Debug/data/
 x64/Debug/exports/
 ```
 
-> These are required for reading/writing `.txt` files and exporting CSVs.
+> These are used for reading/writing `.txt` files and exporting CSVs.
 
 ---
 
@@ -141,10 +139,10 @@ Located in `/data/`:
 ## ✨ Highlights
 
 * Clean modular design using multiple classes
+* Designed and implemented a multi-module C++ application with persistent storage and CSV export
 * Real-world use case (homestead / backyard farming)
 * Strong CLI UX with styled output
 * Practical data tracking + reporting
-* Resume-ready C++ project
 
 ---
 
