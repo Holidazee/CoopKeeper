@@ -2,7 +2,17 @@
 
 A feature-rich **C++ command-line application** for managing backyard chickens, tracking egg production, monitoring costs, and maintaining coop health.
 
-Built with real-world modeling, clean OOP design, and persistent data storage.
+Built with real-world data modeling, clean object-oriented design, and persistent storage.
+
+---
+
+## ⚡ Highlights
+
+* Real-time egg production dashboard
+* Monthly filtering across all records (eggs, feed, expenses, health, cleaning)
+* Accurate cost-per-egg and cost-per-dozen calculations
+* Seasonal, realistic production data modeling
+* Persistent storage using TXT + CSV export
 
 ---
 
@@ -33,8 +43,8 @@ Built with real-world modeling, clean OOP design, and persistent data storage.
 
 * Add, edit, delete egg records
 * View all records (sorted chronologically)
-* ✅ **NEW: View egg records by month**
-* Realistic daily production tracking
+* View egg records by month
+* Daily egg totals and trends
 
 ---
 
@@ -42,7 +52,7 @@ Built with real-world modeling, clean OOP design, and persistent data storage.
 
 * Track feed purchases and costs
 * View full history
-* ✅ **NEW: Filter feed records by month**
+* Filter feed records by month
 
 ---
 
@@ -51,7 +61,7 @@ Built with real-world modeling, clean OOP design, and persistent data storage.
 * Log coop-related expenses
 * Categorize spending
 * Monthly summaries
-* ✅ **NEW: View expenses by month**
+* View expenses by month
 
 ---
 
@@ -59,7 +69,7 @@ Built with real-world modeling, clean OOP design, and persistent data storage.
 
 * Track coop cleaning activity
 * Monitor cleaning frequency
-* ✅ **NEW: View cleaning records by month**
+* View cleaning records by month
 
 ---
 
@@ -67,7 +77,7 @@ Built with real-world modeling, clean OOP design, and persistent data storage.
 
 * Track chicken health issues
 * Log observations per bird
-* ✅ **NEW: View health notes by month**
+* View health notes by month
 
 ---
 
@@ -75,19 +85,15 @@ Built with real-world modeling, clean OOP design, and persistent data storage.
 
 ### Dashboard
 
-![Dashboard](screenshots/Dashboard.png)
+![Dashboard](screenshots/dashboard.png)
 
 ### Egg Records
 
-![Egg Records](screenshots/EggRecords.png)
-
-### Add Egg Entry
-
-![Add Egg](screenshots/addegg.png)
+![Egg Records](screenshots/eggs.png)
 
 ### CSV Export Confirmation
 
-![CSV Export](screenshots/csvconfirm.png)
+![CSV Export](screenshots/export.png)
 
 ---
 
@@ -105,7 +111,7 @@ CoopKeeper/
 │   └── HealthNotes.txt
 │
 ├── exports/
-│   └── CSV exports generated here
+│   └── CSV files generated here
 │
 ├── screenshots/
 │   └── UI screenshots for README
@@ -133,7 +139,7 @@ All data is stored in pipe-delimited `.txt` files:
 MM/DD/YYYY|field|field|...
 ```
 
-### Example:
+### Example
 
 ```
 04/09/2026|17|Strong spring production
@@ -148,7 +154,7 @@ MM/DD/YYYY|field|field|...
 
   * Spring/Summer → peak production
   * Winter → reduced output
-* Realistic feed + expense tracking
+* Realistic feed and expense tracking
 * Accurate cost-per-dozen calculations
 
 ---
@@ -166,7 +172,7 @@ Production Trend: [UP] +24.74%
 
 ## 🛠️ How to Run
 
-1. Clone the repo:
+1. Clone the repository:
 
 ```
 git clone https://github.com/Holidazee/CoopKeeper-CLI.git
@@ -203,7 +209,6 @@ git clone https://github.com/Holidazee/CoopKeeper-CLI.git
 * Per-chicken productivity tracking
 * GUI version (Qt or web app)
 * Graphs and analytics
-* Mobile companion app
 
 ---
 
