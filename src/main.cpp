@@ -19,10 +19,10 @@ int main() {
 
     CoopTracker tracker;
 
-    cout << "\033[35m        ,~.\033[0m\n";
-    cout << "\033[35m       ('v')\033[0m\n";
-    cout << "\033[35m      ((___))\033[0m\n";
-    cout << "\033[35m       ^   ^\033[0m\n";
+    cout << "\033[35m                           ,~.\033[0m\n";
+    cout << "\033[35m                          ('v')\033[0m\n";
+    cout << "\033[35m                         ((___))\033[0m\n";
+    cout << "\033[35m                          ^   ^\033[0m\n";
     cout << "\033[90m============================================================\033[0m\n";
     cout << "\033[1;96m                     COOPKEEPER CLI\033[0m\n";
     cout << "\033[1;36m              Chicken Coop Management System\033[0m\n";
