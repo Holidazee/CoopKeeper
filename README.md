@@ -1,16 +1,40 @@
 # 🐔 CoopKeeper CLI
 
+![C++](https://img.shields.io/badge/language-C++-blue)
+![CLI App](https://img.shields.io/badge/interface-CLI-green)
+![Status](https://img.shields.io/badge/status-active-success)
+
+> 🐔 A practical, data-driven CLI tool for managing backyard chicken operations — built in C++ with real-world modeling and analytics.
+
 A feature-rich C++ command-line application for managing backyard chickens, tracking egg production, analyzing costs, and monitoring coop operations.
 
 Built with real-world data modeling, object-oriented design, and persistent storage.
 
 ---
 
+## 💡 Why CoopKeeper?
+
+CoopKeeper was built to solve a real-world problem: managing backyard chicken operations efficiently.
+
+Instead of spreadsheets or scattered notes, this tool provides a structured, data-driven way to:
+- Track production trends  
+- Monitor costs  
+- Maintain coop health  
+- Make informed decisions over time  
+
+---
+
 ## 🎬 Demo Video
 
-Full walkthrough of CoopKeeper’s features and CLI interface:
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=tT4yOsNMKbs">
+    <img src="screenshots/thumbnail.jpg" width="800" alt="CoopKeeper Demo"/>
+  </a>
+</p>
 
-[![CoopKeeper Demo](screenshots/thumbnail.jpg)](https://www.youtube.com/watch?v=tT4yOsNMKbs)
+<p align="center">
+  ▶️ Click to watch full demo
+</p>
 
 ---
 
@@ -21,6 +45,26 @@ Full walkthrough of CoopKeeper’s features and CLI interface:
 * 💰 Accurate cost-per-egg and cost-per-dozen calculations  
 * 🐔 Realistic seasonal production modeling  
 * 💾 Persistent storage using TXT + CSV export  
+
+---
+
+## 🧰 Tech Stack
+
+- **Language:** C++  
+- **Architecture:** Object-Oriented Programming (OOP)  
+- **Data Storage:** Pipe-delimited TXT files  
+- **Export:** CSV  
+- **Interface:** Command-Line Interface (CLI)  
+
+---
+
+## 📊 Key Metrics Tracked
+
+- Egg production trends (daily, weekly, monthly)  
+- Lay rate (%) per flock  
+- Cost per egg and per dozen  
+- Feed cost tracking over time  
+- Cleaning frequency and maintenance intervals  
 
 ---
 
@@ -118,7 +162,7 @@ CoopKeeper/
 │   ├── dashboard.png
 │   ├── eggs.png
 │   ├── export.png
-│   └── thumbnail.png
+│   └── thumbnail.jpg
 │
 ├── src/
 │   ├── CoopTracker.cpp / .h
@@ -195,7 +239,7 @@ git clone https://github.com/Holidazee/CoopKeeper-CLI.git
 
 ---
 
-## 🧠 Concepts Demonstrated
+## 🧠 Technical Concepts Demonstrated
 
 * Object-Oriented Programming (OOP)  
 * File I/O (TXT + CSV export)  
