@@ -17,7 +17,7 @@ READ_MODEL_CONFIG = ConfigDict(from_attributes=True)
 class EggCreate(BaseModel):
     date: date
     count: int
-    chicken_id: int
+    chicken_id: int | None = None
 
 
 class EggRead(EggCreate):
@@ -51,7 +51,8 @@ def list_eggs(
 @router.post("/eggs", response_model=EggRead, status_code=201)
 def create_egg(egg: EggCreate, current_user: User = Depends(get_current_user)):
     with SessionLocal() as session:
-        get_chicken_or_404(session, egg.chicken_id, current_user.id)
+        if egg.chicken_id is not None:
+            get_chicken_or_404(session, egg.chicken_id, current_user.id)
         new_egg = Egg(
             date=egg.date,
             count=egg.count,
@@ -76,7 +77,8 @@ def update_egg(
 ):
     with SessionLocal() as session:
         egg = get_egg_or_404(session, egg_id, current_user.id)
-        get_chicken_or_404(session, egg_update.chicken_id, current_user.id)
+        if egg_update.chicken_id is not None:
+            get_chicken_or_404(session, egg_update.chicken_id, current_user.id)
         egg.date = egg_update.date
         egg.count = egg_update.count
         egg.chicken_id = egg_update.chicken_id

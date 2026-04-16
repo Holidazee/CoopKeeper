@@ -808,7 +808,7 @@ function getEmptyStateText(resource) {
 
 function buildDashboardSummary() {
   const filteredEggs = getFilteredEggs();
-  const filteredFeedRecords = getFilteredFeedRecords();
+  const filteredExpenses = getFilteredExpenses();
   const filteredCleaningLogs = getFilteredCleaningLogs();
 
   const totalEggs = filteredEggs.reduce(
@@ -816,9 +816,8 @@ function buildDashboardSummary() {
     0
   );
 
-  // Only count feed costs (this fixes the inflated price issue)
-  const totalFeedCost = filteredFeedRecords.reduce(
-    (sum, record) => sum + Number(record.cost || 0),
+  const totalExpenses = filteredExpenses.reduce(
+    (sum, record) => sum + Number(record.amount || 0),
     0
   );
 
@@ -835,14 +834,9 @@ function buildDashboardSummary() {
   return {
     totalChickens: state.chickens.length,
     totalEggs,
-    averageEggsPerChicken: state.chickens.length
-      ? totalEggs / state.chickens.length
-      : 0,
+    totalExpenses,
 
-    // 🔥 FIXED: now based only on feed cost
-    costPerDozenEggs: totalEggs
-      ? (totalFeedCost / totalEggs) * 12
-      : 0,
+    costPerDozenEggs: totalEggs ? (totalExpenses / totalEggs) * 12 : 0,
 
     lastCleaningLog,
     latestEggRecord,
@@ -878,7 +872,7 @@ function renderDashboard() {
 
   elements.dashboardTotalChickens.textContent = String(summary.totalChickens);
   elements.dashboardTotalEggs.textContent = String(summary.totalEggs);
-  elements.dashboardAverageEggs.textContent = formatAverage(summary.averageEggsPerChicken);
+  elements.dashboardAverageEggs.textContent = formatCurrency(summary.totalExpenses);
   elements.dashboardCostPerDozen.textContent = formatCurrency(summary.costPerDozenEggs);
   elements.dashboardLastCleaned.textContent = describeLastCleaned(summary.lastCleaningLog);
   elements.dashboardLatestEgg.textContent = describeLatestEgg(summary.latestEggRecord);
@@ -897,7 +891,7 @@ function describeLatestEgg(record) {
     return state.token ? "No egg records in this range." : "Sign in to load data.";
   }
 
-  return `${formatLongDate(record.date)} | ${record.count} eggs | ${getChickenName(record.chicken_id)}`;
+  return `${formatLongDate(record.date)} | ${record.count} eggs`;
 }
 
 function renderAlerts() {
@@ -1256,7 +1250,7 @@ function renderFeedRecords() {
   elements.feedList.innerHTML = "";
 
   if (state.loading.feed && state.feedRecords.length === 0) {
-    renderTableLoading(elements.feedList, 6);
+    renderTableLoading(elements.feedList, 4);
     elements.feedEmpty.classList.add("hidden");
     return;
   }
@@ -1271,14 +1265,11 @@ function renderFeedRecords() {
   elements.feedEmpty.classList.add("hidden");
 
   for (const feedRecord of feedRecords) {
-    const chickenLabel = feedRecord.chicken_id ? getChickenName(feedRecord.chicken_id) : "General coop";
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${escapeHtml(formatLongDate(feedRecord.date))}</td>
       <td>${escapeHtml(feedRecord.feed_type)}</td>
       <td>${escapeHtml(formatNumber(feedRecord.amount))}</td>
-      <td>${feedRecord.cost == null ? "-" : escapeHtml(formatCurrency(feedRecord.cost))}</td>
-      <td>${escapeHtml(chickenLabel)}</td>
       <td class="table-actions"></td>
     `;
 
@@ -1328,7 +1319,7 @@ function renderCleaningLogs() {
   elements.cleaningList.innerHTML = "";
 
   if (state.loading.cleaning && state.cleaningLogs.length === 0) {
-    renderTableLoading(elements.cleaningList, 5);
+    renderTableLoading(elements.cleaningList, 4);
     elements.cleaningEmpty.classList.add("hidden");
     return;
   }
@@ -1348,7 +1339,6 @@ function renderCleaningLogs() {
       <td>${escapeHtml(formatLongDate(cleaningLog.date))}</td>
       <td>${escapeHtml(cleaningLog.task_type)}</td>
       <td>${escapeHtml(cleaningLog.notes || "-")}</td>
-      <td>${cleaningLog.cost == null ? "-" : escapeHtml(formatCurrency(cleaningLog.cost))}</td>
       <td class="table-actions"></td>
     `;
 
@@ -1426,15 +1416,9 @@ function renderChickenOptions() {
 function renderEggChickenOptions() {
   const selectedValue = elements.eggChickenSelect.value;
   elements.eggChickenSelect.innerHTML = "";
+  addSelectOption(elements.eggChickenSelect, "", "General coop");
 
   if (!state.token) {
-    addSelectOption(elements.eggChickenSelect, "", "Log in first");
-    setFormFieldsEnabled(elements.eggForm, false);
-    return;
-  }
-
-  if (state.chickens.length === 0) {
-    addSelectOption(elements.eggChickenSelect, "", "Add a chicken first");
     setFormFieldsEnabled(elements.eggForm, false);
     return;
   }
@@ -1443,10 +1427,7 @@ function renderEggChickenOptions() {
     addSelectOption(elements.eggChickenSelect, String(chicken.id), getChickenSelectLabel(chicken));
   }
 
-  elements.eggChickenSelect.value =
-    findMatchingSelectValue(elements.eggChickenSelect, selectedValue) ||
-    elements.eggChickenSelect.options[0]?.value ||
-    "";
+  elements.eggChickenSelect.value = findMatchingSelectValue(elements.eggChickenSelect, selectedValue);
   setFormFieldsEnabled(elements.eggForm, true);
 }
 
@@ -1566,7 +1547,7 @@ function startEggEdit(eggId) {
   state.editing.eggId = egg.id;
   elements.eggForm.elements.date.value = egg.date;
   elements.eggForm.elements.count.value = String(egg.count);
-  elements.eggChickenSelect.value = String(egg.chicken_id);
+  elements.eggChickenSelect.value = egg.chicken_id == null ? "" : String(egg.chicken_id);
   elements.eggFormTitle.textContent = "Edit Egg Record";
   elements.eggSubmitButton.textContent = "Update Egg Record";
   elements.eggCancelButton.classList.remove("hidden");
@@ -1584,7 +1565,6 @@ function startFeedEdit(feedId) {
   elements.feedForm.elements.date.value = feedRecord.date;
   elements.feedForm.elements.feed_type.value = feedRecord.feed_type;
   elements.feedForm.elements.amount.value = String(feedRecord.amount);
-  elements.feedForm.elements.cost.value = feedRecord.cost == null ? "" : String(feedRecord.cost);
   elements.feedChickenSelect.value = feedRecord.chicken_id == null ? "" : String(feedRecord.chicken_id);
   elements.feedFormTitle.textContent = "Edit Feed Record";
   elements.feedSubmitButton.textContent = "Update Feed Record";
@@ -1621,7 +1601,6 @@ function startCleaningEdit(cleaningId) {
   elements.cleaningForm.elements.date.value = cleaningLog.date;
   elements.cleaningForm.elements.task_type.value = cleaningLog.task_type;
   elements.cleaningForm.elements.notes.value = cleaningLog.notes || "";
-  elements.cleaningForm.elements.cost.value = cleaningLog.cost == null ? "" : String(cleaningLog.cost);
   elements.cleaningFormTitle.textContent = "Edit Cleaning Log";
   elements.cleaningSubmitButton.textContent = "Update Cleaning Log";
   elements.cleaningCancelButton.classList.remove("hidden");
@@ -1899,10 +1878,11 @@ async function handleEggSubmit(event) {
   elements.eggSubmitButton.textContent = "Saving...";
 
   const formData = new FormData(elements.eggForm);
+  const chickenValue = String(formData.get("chicken_id") || "");
   const payload = {
     date: String(formData.get("date") || ""),
     count: Number(formData.get("count") || 0),
-    chicken_id: Number(formData.get("chicken_id")),
+    chicken_id: chickenValue ? Number(chickenValue) : null,
   };
 
   try {
@@ -1938,7 +1918,6 @@ async function handleFeedSubmit(event) {
     date: String(formData.get("date") || ""),
     feed_type: String(formData.get("feed_type") || "").trim(),
     amount: Number(formData.get("amount") || 0),
-    cost: parseOptionalNumber(formData.get("cost")),
     chicken_id: chickenValue ? Number(chickenValue) : null,
   };
 
@@ -2009,7 +1988,6 @@ async function handleCleaningSubmit(event) {
     date: String(formData.get("date") || ""),
     task_type: String(formData.get("task_type") || "").trim(),
     notes: String(formData.get("notes") || "").trim() || null,
-    cost: parseOptionalNumber(formData.get("cost")),
   };
 
   try {
@@ -2179,15 +2157,6 @@ function getLabelIndices(length, maxLabels) {
   }
   indices.add(length - 1);
   return indices;
-}
-
-function parseOptionalNumber(value) {
-  const parsedValue = String(value || "").trim();
-  return parsedValue ? Number(parsedValue) : null;
-}
-
-function formatAverage(value) {
-  return Number(value || 0).toFixed(2);
 }
 
 function formatNumber(value) {

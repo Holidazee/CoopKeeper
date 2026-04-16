@@ -43,7 +43,7 @@ READ_MODEL_CONFIG = ConfigDict(from_attributes=True)
 EGG_CHICKEN_ID_COLUMN_SQL = text(
     "ALTER TABLE eggs ADD COLUMN IF NOT EXISTS chicken_id INTEGER REFERENCES chickens(id)"
 )
-EGG_CHICKEN_ID_NOT_NULL_SQL = text("ALTER TABLE eggs ALTER COLUMN chicken_id SET NOT NULL")
+EGG_CHICKEN_ID_NULLABLE_SQL = text("ALTER TABLE eggs ALTER COLUMN chicken_id DROP NOT NULL")
 EGG_DATE_TYPE_SQL = text("ALTER TABLE eggs ALTER COLUMN date TYPE DATE USING date::date")
 CHICKEN_USER_ID_COLUMN_SQL = text(
     "ALTER TABLE chickens ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)"
@@ -96,7 +96,7 @@ def ensure_database_schema() -> None:
             connection.execute(FEED_RECORD_USER_ID_COLUMN_SQL)
             connection.execute(EXPENSE_USER_ID_COLUMN_SQL)
             connection.execute(EGG_DATE_TYPE_SQL)
-            connection.execute(EGG_CHICKEN_ID_NOT_NULL_SQL)
+            connection.execute(EGG_CHICKEN_ID_NULLABLE_SQL)
 
 
 @asynccontextmanager

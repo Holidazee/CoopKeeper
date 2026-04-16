@@ -114,8 +114,9 @@ body {
 
 .content-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.25rem;
+  align-items: stretch;
 }
 
 .panel {
@@ -125,6 +126,13 @@ body {
   padding: 1.35rem;
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
+}
+
+.content-grid > .panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 640px;
+  height: 640px;
 }
 
 .panel + .panel,
@@ -345,6 +353,13 @@ body {
   padding: 0;
 }
 
+.content-grid > .panel > .item-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
 .item-card {
   display: flex;
   justify-content: space-between;
@@ -376,7 +391,12 @@ body {
 }
 
 .table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 320px;
+  overflow-y: auto;
   overflow-x: auto;
+  border-radius: 12px;
 }
 
 .data-table {
@@ -620,6 +640,15 @@ body {
   .dashboard-chart-grid,
   .auth-grid {
     grid-template-columns: 1fr;
+  }
+
+  .content-grid > .panel {
+    min-height: auto;
+    height: auto;
+  }
+
+  .table-wrap {
+    max-height: none;
   }
 
   .stat-card-wide {

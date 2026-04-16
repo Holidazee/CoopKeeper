@@ -43,9 +43,9 @@ class Egg(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     date: Mapped[date] = mapped_column(Date, nullable=False)
     count: Mapped[int] = mapped_column(nullable=False)
-    chicken_id: Mapped[int] = mapped_column(ForeignKey("chickens.id"), nullable=False)
+    chicken_id: Mapped[int | None] = mapped_column(ForeignKey("chickens.id"), nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
-    chicken: Mapped["Chicken"] = relationship(back_populates="eggs")
+    chicken: Mapped["Chicken | None"] = relationship(back_populates="eggs")
     user: Mapped["User"] = relationship(back_populates="eggs")
 
 

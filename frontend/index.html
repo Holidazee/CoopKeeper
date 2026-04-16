@@ -120,7 +120,7 @@
               <strong id="dashboard-total-eggs" class="stat-value">-</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-label">Average eggs per chicken</span>
+              <span class="stat-label">Total expenses</span>
               <strong id="dashboard-average-eggs" class="stat-value">-</strong>
             </article>
             <article class="stat-card">
@@ -283,8 +283,8 @@
                   <input type="number" name="count" min="1" required placeholder="6" />
                 </label>
                 <label class="field">
-                  <span>Chicken</span>
-                  <select name="chicken_id" required id="egg-chicken-select"></select>
+                  <span>Chicken (optional)</span>
+                  <select name="chicken_id" id="egg-chicken-select"></select>
                 </label>
                 <button id="egg-submit-button" type="submit" class="button">
                   Save Egg Record
@@ -325,8 +325,6 @@
                     <th>Date</th>
                     <th>Type</th>
                     <th>Amount</th>
-                    <th>Cost</th>
-                    <th>Chicken</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -360,11 +358,7 @@
                   <input type="number" name="amount" min="0" step="0.01" required placeholder="10" />
                 </label>
                 <label class="field">
-                  <span>Cost</span>
-                  <input type="number" name="cost" min="0" step="0.01" placeholder="18.50" />
-                </label>
-                <label class="field">
-                  <span>Chicken</span>
+                  <span>Chicken (optional)</span>
                   <select name="chicken_id" id="feed-chicken-select"></select>
                 </label>
                 <button id="feed-submit-button" type="submit" class="button">Save Feed Record</button>
@@ -476,7 +470,6 @@
                     <th>Date</th>
                     <th>Task</th>
                     <th>Notes</th>
-                    <th>Cost</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -508,10 +501,6 @@
                 <label class="field">
                   <span>Notes</span>
                   <input type="text" name="notes" placeholder="Scrubbed roost bars" />
-                </label>
-                <label class="field">
-                  <span>Cost</span>
-                  <input type="number" name="cost" min="0" step="0.01" placeholder="14.99" />
                 </label>
                 <button id="cleaning-submit-button" type="submit" class="button">Save Cleaning Log</button>
               </form>
