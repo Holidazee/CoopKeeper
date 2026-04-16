@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, Float, ForeignKey, String
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -19,6 +19,11 @@ class User(Base):
         cascade="all, delete-orphan",
     )
     expenses: Mapped[list["Expense"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    cleaning_logs: Mapped[list["CleaningLog"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Chicken(Base):
@@ -70,3 +75,32 @@ class Expense(Base):
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     user: Mapped["User"] = relationship(back_populates="expenses")
+
+
+class CleaningLog(Base):
+    __tablename__ = "cleaning_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    task_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    user: Mapped["User"] = relationship(back_populates="cleaning_logs")
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    alert_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    message: Mapped[str] = mapped_column(String(255), nullable=False)
+    severity: Mapped[str] = mapped_column(String(50), nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    user: Mapped["User"] = relationship(back_populates="alerts")

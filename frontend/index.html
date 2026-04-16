@@ -77,8 +77,30 @@
               <p class="section-label">Overview</p>
               <h2>Dashboard</h2>
             </div>
-            <p id="dashboard-status" class="section-status">Loading...</p>
+            <div class="panel-tools">
+              <p id="dashboard-status" class="section-status">Loading...</p>
+              <div id="date-filter-group" class="filter-group" aria-label="Date range filter">
+                <button type="button" class="button button-secondary button-small filter-button" data-range="7">
+                  Last 7 Days
+                </button>
+                <button
+                  type="button"
+                  class="button button-secondary button-small filter-button"
+                  data-range="30"
+                >
+                  Last 30 Days
+                </button>
+                <button
+                  type="button"
+                  class="button button-secondary button-small filter-button"
+                  data-range="all"
+                >
+                  All Time
+                </button>
+              </div>
+            </div>
           </div>
+          <p class="panel-helper">Date filtering applies to the dashboard, eggs, feed, expenses, and cleaning logs.</p>
           <p id="dashboard-error" class="message message-error hidden" role="alert"></p>
           <div class="stats-grid">
             <article class="stat-card">
@@ -92,6 +114,14 @@
             <article class="stat-card">
               <span class="stat-label">Average eggs per chicken</span>
               <strong id="dashboard-average-eggs" class="stat-value">-</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Cost per dozen eggs</span>
+              <strong id="dashboard-cost-per-dozen" class="stat-value">-</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Last cleaned</span>
+              <strong id="dashboard-last-cleaned" class="stat-value stat-value-small">-</strong>
             </article>
             <article class="stat-card stat-card-wide">
               <span class="stat-label">Latest egg record</span>
@@ -109,7 +139,7 @@
                 <p id="egg-chart-summary" class="chart-summary">-</p>
               </div>
               <p id="egg-chart-message" class="message hidden"></p>
-              <div id="egg-chart" class="mini-chart" aria-label="Egg production chart"></div>
+              <div id="egg-chart" class="chart-canvas" aria-label="Egg production chart"></div>
             </article>
 
             <article class="chart-card">
@@ -121,9 +151,23 @@
                 <p id="expense-chart-summary" class="chart-summary">-</p>
               </div>
               <p id="expense-chart-message" class="message hidden"></p>
-              <div id="expense-chart" class="mini-chart" aria-label="Expenses chart"></div>
+              <div id="expense-chart" class="chart-canvas" aria-label="Expenses chart"></div>
             </article>
           </div>
+
+          <article class="chart-card alerts-panel">
+            <div class="chart-header">
+              <div>
+                <p class="section-label">Attention</p>
+                <h3>Alerts</h3>
+              </div>
+              <p id="alerts-status" class="chart-summary">Loading...</p>
+            </div>
+            <p id="alerts-error" class="message message-error hidden" role="alert"></p>
+            <p id="alerts-notice" class="message hidden" aria-live="polite"></p>
+            <p id="alerts-empty" class="message hidden">No alerts right now. You're all caught up.</p>
+            <ul id="alerts-list" class="alert-list"></ul>
+          </article>
         </section>
 
         <div class="content-grid">
@@ -133,15 +177,20 @@
                 <p class="section-label">Records</p>
                 <h2>Chickens</h2>
               </div>
-              <p id="chickens-status" class="section-status">Loading...</p>
+              <div class="panel-tools">
+                <p id="chickens-status" class="section-status">Loading...</p>
+                <button id="chicken-toggle-button" type="button" class="button button-secondary button-small">
+                  + Add Chicken
+                </button>
+              </div>
             </div>
             <p id="chickens-error" class="message message-error hidden" role="alert"></p>
-            <p id="chickens-empty" class="message hidden">No chickens yet.</p>
+            <p id="chickens-notice" class="message hidden" aria-live="polite"></p>
+            <p id="chickens-empty" class="message hidden">Add your first chicken to get started.</p>
             <ul id="chickens-list" class="item-list"></ul>
 
-            <div class="panel-divider"></div>
-
-            <div class="subsection">
+            <div id="chicken-form-panel" class="subsection form-panel hidden">
+              <div class="panel-divider"></div>
               <div class="subsection-header">
                 <h3 id="chicken-form-title">Add Chicken</h3>
                 <button
@@ -163,7 +212,6 @@
                 </label>
                 <button id="chicken-submit-button" type="submit" class="button">Save Chicken</button>
               </form>
-              <p id="chicken-form-message" class="message hidden" aria-live="polite"></p>
             </div>
           </section>
 
@@ -173,15 +221,29 @@
                 <p class="section-label">Records</p>
                 <h2>Eggs</h2>
               </div>
-              <p id="eggs-status" class="section-status">Loading...</p>
+              <div class="panel-tools">
+                <p id="eggs-status" class="section-status">Loading...</p>
+                <label class="sort-control" for="eggs-sort-select">
+                  <span>Sort</span>
+                  <select id="eggs-sort-select">
+                    <option value="date_desc">Newest first</option>
+                    <option value="date_asc">Oldest first</option>
+                    <option value="count_desc">Highest count</option>
+                    <option value="count_asc">Lowest count</option>
+                  </select>
+                </label>
+                <button id="egg-toggle-button" type="button" class="button button-secondary button-small">
+                  + Add Egg Record
+                </button>
+              </div>
             </div>
             <p id="eggs-error" class="message message-error hidden" role="alert"></p>
+            <p id="eggs-notice" class="message hidden" aria-live="polite"></p>
             <p id="eggs-empty" class="message hidden">No egg records yet.</p>
             <div class="table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Date</th>
                     <th>Count</th>
                     <th>Chicken</th>
@@ -192,9 +254,8 @@
               </table>
             </div>
 
-            <div class="panel-divider"></div>
-
-            <div class="subsection">
+            <div id="egg-form-panel" class="subsection form-panel hidden">
+              <div class="panel-divider"></div>
               <div class="subsection-header">
                 <h3 id="egg-form-title">Add Egg Record</h3>
                 <button
@@ -222,7 +283,6 @@
                   Save Egg Record
                 </button>
               </form>
-              <p id="egg-form-message" class="message hidden" aria-live="polite"></p>
             </div>
           </section>
 
@@ -232,15 +292,29 @@
                 <p class="section-label">Records</p>
                 <h2>Feed</h2>
               </div>
-              <p id="feed-status" class="section-status">Loading...</p>
+              <div class="panel-tools">
+                <p id="feed-status" class="section-status">Loading...</p>
+                <label class="sort-control" for="feed-sort-select">
+                  <span>Sort</span>
+                  <select id="feed-sort-select">
+                    <option value="date_desc">Newest first</option>
+                    <option value="date_asc">Oldest first</option>
+                    <option value="amount_desc">Largest amount</option>
+                    <option value="amount_asc">Smallest amount</option>
+                  </select>
+                </label>
+                <button id="feed-toggle-button" type="button" class="button button-secondary button-small">
+                  + Add Feed Record
+                </button>
+              </div>
             </div>
             <p id="feed-error" class="message message-error hidden" role="alert"></p>
+            <p id="feed-notice" class="message hidden" aria-live="polite"></p>
             <p id="feed-empty" class="message hidden">No feed records yet.</p>
             <div class="table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Date</th>
                     <th>Type</th>
                     <th>Amount</th>
@@ -253,9 +327,8 @@
               </table>
             </div>
 
-            <div class="panel-divider"></div>
-
-            <div class="subsection">
+            <div id="feed-form-panel" class="subsection form-panel hidden">
+              <div class="panel-divider"></div>
               <div class="subsection-header">
                 <h3 id="feed-form-title">Add Feed Record</h3>
                 <button
@@ -289,7 +362,6 @@
                 </label>
                 <button id="feed-submit-button" type="submit" class="button">Save Feed Record</button>
               </form>
-              <p id="feed-form-message" class="message hidden" aria-live="polite"></p>
             </div>
           </section>
 
@@ -299,15 +371,29 @@
                 <p class="section-label">Records</p>
                 <h2>Expenses</h2>
               </div>
-              <p id="expenses-status" class="section-status">Loading...</p>
+              <div class="panel-tools">
+                <p id="expenses-status" class="section-status">Loading...</p>
+                <label class="sort-control" for="expenses-sort-select">
+                  <span>Sort</span>
+                  <select id="expenses-sort-select">
+                    <option value="date_desc">Newest first</option>
+                    <option value="date_asc">Oldest first</option>
+                    <option value="amount_desc">Highest amount</option>
+                    <option value="amount_asc">Lowest amount</option>
+                  </select>
+                </label>
+                <button id="expense-toggle-button" type="button" class="button button-secondary button-small">
+                  + Add Expense
+                </button>
+              </div>
             </div>
             <p id="expenses-error" class="message message-error hidden" role="alert"></p>
+            <p id="expenses-notice" class="message hidden" aria-live="polite"></p>
             <p id="expenses-empty" class="message hidden">No expenses yet.</p>
             <div class="table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Date</th>
                     <th>Category</th>
                     <th>Description</th>
@@ -319,9 +405,8 @@
               </table>
             </div>
 
-            <div class="panel-divider"></div>
-
-            <div class="subsection">
+            <div id="expense-form-panel" class="subsection form-panel hidden">
+              <div class="panel-divider"></div>
               <div class="subsection-header">
                 <h3 id="expense-form-title">Add Expense</h3>
                 <button
@@ -351,7 +436,78 @@
                 </label>
                 <button id="expense-submit-button" type="submit" class="button">Save Expense</button>
               </form>
-              <p id="expense-form-message" class="message hidden" aria-live="polite"></p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Maintenance</p>
+                <h2>Cleaning Log</h2>
+              </div>
+              <div class="panel-tools">
+                <p id="cleaning-status" class="section-status">Loading...</p>
+                <label class="sort-control" for="cleaning-sort-select">
+                  <span>Sort</span>
+                  <select id="cleaning-sort-select">
+                    <option value="date_desc">Newest first</option>
+                    <option value="date_asc">Oldest first</option>
+                  </select>
+                </label>
+                <button id="cleaning-toggle-button" type="button" class="button button-secondary button-small">
+                  + Add Cleaning Log
+                </button>
+              </div>
+            </div>
+            <p id="cleaning-error" class="message message-error hidden" role="alert"></p>
+            <p id="cleaning-notice" class="message hidden" aria-live="polite"></p>
+            <p id="cleaning-empty" class="message hidden">No cleaning logs yet.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Task</th>
+                    <th>Notes</th>
+                    <th>Cost</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="cleaning-list"></tbody>
+              </table>
+            </div>
+
+            <div id="cleaning-form-panel" class="subsection form-panel hidden">
+              <div class="panel-divider"></div>
+              <div class="subsection-header">
+                <h3 id="cleaning-form-title">Add Cleaning Log</h3>
+                <button
+                  id="cleaning-cancel-button"
+                  type="button"
+                  class="button button-secondary button-small hidden"
+                >
+                  Cancel Edit
+                </button>
+              </div>
+              <form id="cleaning-form" class="stack-form">
+                <label class="field">
+                  <span>Date</span>
+                  <input type="date" name="date" required />
+                </label>
+                <label class="field">
+                  <span>Task Type</span>
+                  <input type="text" name="task_type" required placeholder="Deep clean" />
+                </label>
+                <label class="field">
+                  <span>Notes</span>
+                  <input type="text" name="notes" placeholder="Scrubbed roost bars" />
+                </label>
+                <label class="field">
+                  <span>Cost</span>
+                  <input type="number" name="cost" min="0" step="0.01" placeholder="14.99" />
+                </label>
+                <button id="cleaning-submit-button" type="submit" class="button">Save Cleaning Log</button>
+              </form>
             </div>
           </section>
         </div>

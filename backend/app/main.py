@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import date
 import json
+import os
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -15,13 +16,16 @@ from starlette.staticfiles import StaticFiles
 from app.auth import get_current_user
 from app.db.database import Base, SessionLocal, engine
 from app.models import Expense, FeedRecord, User
+from app.routers.alerts import router as alerts_router
 from app.routers.auth import router as auth_router
 from app.routers.chickens import get_chicken_or_404, router as chickens_router
+from app.routers.cleaning_logs import router as cleaning_logs_router
 from app.routers.common import commit_and_refresh, get_owned_or_404
 from app.routers.dashboard import router as dashboard_router
 from app.routers.eggs import router as eggs_router
 from app.settings import APP_ENV, APP_TITLE, APP_VERSION, CORS_ORIGINS, FRONTEND_API_BASE_URL
 
+ENV = os.getenv("ENV", "dev")
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 FRONTEND_INDEX = FRONTEND_DIR / "index.html"
 TOP_LEVEL_RESOURCES = [
@@ -30,6 +34,8 @@ TOP_LEVEL_RESOURCES = [
     "/eggs",
     "/feed",
     "/expenses",
+    "/cleaning-logs",
+    "/alerts",
     "/dashboard",
 ]
 READ_MODEL_CONFIG = ConfigDict(from_attributes=True)
@@ -98,7 +104,14 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
+app = FastAPI(
+    title=APP_TITLE,
+    version=APP_VERSION,
+    lifespan=lifespan,
+    docs_url="/docs" if ENV == "dev" else None,
+    redoc_url="/redoc" if ENV == "dev" else None,
+    openapi_url="/openapi.json" if ENV == "dev" else None,
+)
 
 if CORS_ORIGINS:
     app.add_middleware(
@@ -113,6 +126,8 @@ app.mount("/app-static", StaticFiles(directory=FRONTEND_DIR), name="frontend-sta
 app.include_router(auth_router)
 app.include_router(chickens_router)
 app.include_router(eggs_router)
+app.include_router(cleaning_logs_router)
+app.include_router(alerts_router)
 app.include_router(dashboard_router)
 
 
@@ -129,11 +144,9 @@ def ensure_optional_chicken_exists(session: Session, chicken_id: int | None, use
         get_chicken_or_404(session, chicken_id, user_id)
 
 
-from fastapi.responses import RedirectResponse
-
-@app.get("/", include_in_schema=False)
-def read_root():
-    return FileResponse(FRONTEND_INDEX)
+@app.get("/")
+def root():
+    return {"message": "CoopKeeper API is running"}
 
 @app.get("/app", include_in_schema=False)
 @app.get("/app/", include_in_schema=False)

@@ -2,6 +2,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 TEST_DB_PATH = Path(tempfile.mkdtemp()) / "test.db"
@@ -56,6 +57,48 @@ class CoopKeeperApiTests(unittest.TestCase):
         response = self.client.post(
             "/eggs",
             json={"date": egg_date, "count": count, "chicken_id": chicken_id},
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        return response.json()
+
+    def create_feed_record(
+        self,
+        feed_date: str,
+        feed_type: str = "Layer pellets",
+        amount: float = 10,
+        cost: float | None = None,
+        chicken_id: int | None = None,
+    ) -> dict:
+        response = self.client.post(
+            "/feed",
+            json={
+                "date": feed_date,
+                "feed_type": feed_type,
+                "amount": amount,
+                "cost": cost,
+                "chicken_id": chicken_id,
+            },
+            headers=self.auth_headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        return response.json()
+
+    def create_cleaning_log(
+        self,
+        cleaning_date: str,
+        task_type: str = "Deep clean",
+        notes: str | None = None,
+        cost: float | None = None,
+    ) -> dict:
+        response = self.client.post(
+            "/cleaning-logs",
+            json={
+                "date": cleaning_date,
+                "task_type": task_type,
+                "notes": notes,
+                "cost": cost,
+            },
             headers=self.auth_headers,
         )
         self.assertEqual(response.status_code, 201)
@@ -160,6 +203,93 @@ class CoopKeeperApiTests(unittest.TestCase):
         self.assertEqual(dashboard["total_eggs"], 6)
         self.assertAlmostEqual(dashboard["average_eggs_per_chicken"], 3.0)
         self.assertEqual(dashboard["latest_egg_record"], latest_egg)
+
+    def test_cleaning_logs_crud_endpoints(self):
+        created = self.create_cleaning_log(
+            "2026-04-10",
+            task_type="Coop sweep",
+            notes="Refreshed bedding",
+            cost=12.5,
+        )
+
+        list_response = self.client.get("/cleaning-logs", headers=self.auth_headers)
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(list_response.json(), [created])
+
+        get_response = self.client.get(
+            f"/cleaning-logs/{created['id']}",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(get_response.status_code, 200)
+        self.assertEqual(get_response.json(), created)
+
+        update_response = self.client.put(
+            f"/cleaning-logs/{created['id']}",
+            json={
+                "date": "2026-04-11",
+                "task_type": "Deep clean",
+                "notes": "Washed waterers",
+                "cost": 16.0,
+            },
+            headers=self.auth_headers,
+        )
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(
+            update_response.json(),
+            {
+                "id": created["id"],
+                "date": "2026-04-11",
+                "task_type": "Deep clean",
+                "notes": "Washed waterers",
+                "cost": 16.0,
+            },
+        )
+
+        delete_response = self.client.delete(
+            f"/cleaning-logs/{created['id']}",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(delete_response.status_code, 204)
+
+        missing_response = self.client.get(
+            f"/cleaning-logs/{created['id']}",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(missing_response.status_code, 404)
+        self.assertEqual(missing_response.json(), {"detail": "Cleaning log not found"})
+
+    def test_alert_rules_and_read_flow(self):
+        initial_alerts_response = self.client.get("/alerts", headers=self.auth_headers)
+        self.assertEqual(initial_alerts_response.status_code, 200)
+        initial_alerts = initial_alerts_response.json()
+        self.assertCountEqual(
+            [alert["alert_type"] for alert in initial_alerts],
+            ["cleaning_reminder", "egg_reminder", "feed_reminder"],
+        )
+
+        alert_to_read = initial_alerts[0]
+        read_response = self.client.post(
+            f"/alerts/{alert_to_read['id']}/read",
+            headers=self.auth_headers,
+        )
+        self.assertEqual(read_response.status_code, 200)
+        self.assertTrue(read_response.json()["is_read"])
+
+        unread_alerts_response = self.client.get("/alerts", headers=self.auth_headers)
+        self.assertEqual(unread_alerts_response.status_code, 200)
+        unread_alerts = unread_alerts_response.json()
+        self.assertEqual(len(unread_alerts), 2)
+        self.assertNotIn(alert_to_read["id"], [alert["id"] for alert in unread_alerts])
+
+        today = date.today()
+        chicken = self.create_chicken("Alert Daisy", "Australorp")
+        self.create_egg(chicken["id"], today.isoformat(), 3)
+        self.create_feed_record(today.isoformat(), chicken_id=chicken["id"])
+        self.create_cleaning_log(today.isoformat())
+
+        resolved_alerts_response = self.client.get("/alerts", headers=self.auth_headers)
+        self.assertEqual(resolved_alerts_response.status_code, 200)
+        self.assertEqual(resolved_alerts_response.json(), [])
 
     def test_users_only_access_their_own_chickens_eggs_and_dashboard(self):
         chicken = self.create_chicken("Private Daisy", "Australorp")
