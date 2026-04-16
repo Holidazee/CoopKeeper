@@ -1,128 +1,23 @@
-# 🐔 CoopKeeper
+# CoopKeeper
 
-CoopKeeper is a full-stack web application for managing backyard chickens, tracking egg production, recording feed usage, and monitoring coop operations.
+CoopKeeper is a portfolio full-stack app for tracking chickens, egg production, feed usage, expenses, cleaning logs, and alerts.
 
-Built with FastAPI and PostgreSQL, it demonstrates real-world backend architecture, authentication, operational tracking, and deployment-ready design in a clean, unified service.
+## Stack
 
-🌐 **Live App:** https://www.coopkeeper.net
-📚 **API Docs:** https://www.coopkeeper.net/docs
+- Backend: FastAPI + PostgreSQL
+- Frontend: HTML, CSS, and JavaScript
+- Hosting target: Render
 
----
+## Local Development
 
-## ⚡ Features
-
-### 🔐 Core System
-
-* Secure user authentication and API access
-* Full-stack architecture (API + frontend served together)
-* Environment-based configuration (local, staging, production)
-* Docker support for database setup
-
-### 🐔 Flock Management
-
-* Chicken record management
-* Centralized flock tracking
-
-### 🥚 Production Tracking
-
-* Egg record logging
-* Historical production tracking
-
-### 🌾 Feed Tracking
-
-* Feed purchase and usage logging
-* Cost tracking over time
-
-### 💰 Expense Tracking
-
-* Coop-related expense logging
-* Operational cost visibility
-
-### 🛠️ Coop Management
-
-* Cleaning and maintenance logs
-* Track coop upkeep history
-* Build consistent care routines
-
-### 🔔 Alerts & Notifications
-
-* Custom alerts for coop tasks
-* Cleaning and maintenance reminders
-* Extensible system for future automated notifications
-
-### 📊 Dashboard
-
-* Overview of coop activity
-* Designed for future analytics and reporting
-
----
-
-## 🛠️ Tech Stack
-
-* **Backend:** FastAPI (Python)
-* **Database:** PostgreSQL
-* **Frontend:** HTML, CSS, JavaScript (served via FastAPI)
-* **Infra:** Docker, Uvicorn
-
----
-
-## 🧠 Engineering Highlights
-
-* Clean separation of concerns (routers, models, config)
-* Token-based authentication system
-* Multi-entity CRUD architecture:
-
-  * chickens
-  * eggs
-  * feed
-  * expenses
-  * alerts
-  * maintenance logs
-* Operational tracking system (beyond basic CRUD)
-* Extensible alerting system for scheduled tasks
-* PostgreSQL-backed persistence
-* Environment-driven configuration system
-* Production-ready startup configuration (multi-worker support)
-* Unified backend serving both API and frontend
-
----
-
-## 💼 Why This Project Matters
-
-CoopKeeper goes beyond simple CRUD by introducing operational tooling such as maintenance logs and alerting systems, enabling active management of coop health and upkeep.
-
-This project simulates a real-world production system used to manage livestock operations and track operational data.
-
-It demonstrates the ability to design, build, and deploy a complete full-stack application, including:
-
-* API design and routing
-* Authentication and security
-* Persistent data storage
-* Operational feature development
-* Environment configuration
-* Deployment and production readiness
-
----
-
-## 🚀 Local Development
-
-### 1. Setup environment
-
-Create a `.env` file from:
-
-backend/.env.example
-
----
-
-### 2. Start PostgreSQL with Docker
+1. Copy `backend/.env.example` to `backend/.env`.
+2. Start PostgreSQL with Docker:
 
 ```bash
 docker compose up -d
 ```
 
----
-
-### 3. Install backend dependencies
+3. Install backend dependencies:
 
 ```bash
 cd backend
@@ -131,132 +26,87 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
----
-
-### 4. Run the app
+4. Run the backend:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
----
+5. Open the app:
 
-### 🔗 Access the app
+- Frontend: [http://127.0.0.1:8000/app](http://127.0.0.1:8000/app)
+- API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-* App: http://localhost:8000/app
-* API Docs: http://localhost:8000/docs
+## Deployment Shape
 
----
+For production, deploy the frontend and backend as separate Render services:
 
-## ⚙️ Environment Variables
+- `https://www.coopkeeper.net/` serves the frontend static site
+- `https://api.coopkeeper.net/` serves the FastAPI backend
 
-### Required
+This keeps the public portfolio URL clean while preserving a dedicated API origin.
 
-* DATABASE_URL
-* SECRET_KEY (required outside local development)
+## Render Setup
 
-### Common
+The repo includes a root `render.yaml` blueprint with two services:
 
-* APP_ENV=local|staging|production
-* APP_TITLE
-* APP_VERSION
-* ACCESS_TOKEN_EXPIRE_MINUTES
-* FRONTEND_API_BASE_URL
-* CORS_ORIGINS
-* HOST
-* PORT
-* WEB_CONCURRENCY
+- `coopkeeper-web`
+  - Render Static Site
+  - Publishes `./frontend`
+  - Custom domain: `www.coopkeeper.net`
+- `coopkeeper-api`
+  - Render Python Web Service
+  - Root directory: `backend`
+  - Start command: `python start.py`
+  - Health check: `/health`
+  - Custom domain: `api.coopkeeper.net`
 
-### Notes
+### Backend environment variables
 
-* Leave FRONTEND_API_BASE_URL empty when frontend is served by the same backend
-* Set CORS_ORIGINS only when using different domains
+Set these on the Render API service:
 
----
+- `ENV=prod`
+- `APP_ENV=production`
+- `DATABASE_URL=...`
+- `SECRET_KEY=...`
+- `CORS_ORIGINS=https://coopkeeper.net,https://www.coopkeeper.net`
 
-## 🧪 Staging
+### Docs behavior
 
-* Use a staging Postgres database
-* Set APP_ENV=staging
-* Use a real SECRET_KEY
-* Configure CORS_ORIGINS if needed
+FastAPI docs are environment-based:
 
-Run:
+- `ENV=dev` or unset:
+  - `/docs`
+  - `/redoc`
+  - `/openapi.json`
+- `ENV=prod`:
+  - docs disabled
 
-```bash
-cd backend
-python start.py
-```
+## Frontend API Configuration
 
----
+The frontend uses `frontend/config.js` to choose the API base URL:
 
-## 🌍 Production
+- Localhost: `http://127.0.0.1:8000`
+- Non-local hosts: `https://api.coopkeeper.net`
 
-### Recommended Setup
+That means the deployed static site automatically talks to the API subdomain without changing application code.
 
-* PostgreSQL hosted separately
-* FastAPI behind a reverse proxy (NGINX, platform router, etc.)
-* TLS handled at the proxy/platform
+## Custom Domain Notes
 
-### Example Environment
+On Render, custom domains can be attached to both web services and static sites. When you add a `www` subdomain, Render automatically adds the matching root domain and redirects it to `www`.
 
-```env
-APP_ENV=production
-DATABASE_URL=postgresql+psycopg://...
-SECRET_KEY=strong-random-secret
-PORT=8000
-WEB_CONCURRENCY=2
-CORS_ORIGINS=https://your-frontend-domain.com
-FRONTEND_API_BASE_URL=
-```
+Recommended setup:
 
----
+- Attach `www.coopkeeper.net` to the static site
+- Attach `api.coopkeeper.net` to the FastAPI service
+- Let Render redirect `coopkeeper.net` to `www.coopkeeper.net`
 
-### Run in production
+## Verification Checklist
 
-```bash
-cd backend
-python start.py
-```
+After deployment:
 
----
-
-## ✅ Deployment Checklist
-
-* [ ] Set SECRET_KEY
-* [ ] Configure DATABASE_URL
-* [ ] Set APP_ENV=production
-* [ ] Configure CORS_ORIGINS if needed
-* [ ] Verify /health
-* [ ] Verify /health/db
-* [ ] Confirm /app loads successfully
-
----
-
-## 📈 Future Improvements
-
-* Advanced alert system (email / push notifications)
-* Recurring task scheduling
-* Cost-per-egg and cost-per-dozen analytics
-* Improved dashboard visualizations
-* Linking egg records to specific chickens
-* Mobile-friendly UI improvements
-* API pagination and filtering
-
----
-
-## 📷 Screenshots
-
-*Add screenshots of dashboard, alerts, and cleaning log views here*
-
----
-
-## 📄 License
-
-MIT 
-
----
-
-📌 Author
-
-Built by Taylor Burris
+- `https://www.coopkeeper.net/` loads the frontend UI
+- `https://api.coopkeeper.net/` returns `{"message":"CoopKeeper API is running"}`
+- `https://api.coopkeeper.net/health` returns success
+- `https://api.coopkeeper.net/docs` returns `404` in production
+- Login, signup, and all CRUD flows still work from the frontend

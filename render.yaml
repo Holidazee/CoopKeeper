@@ -1,0 +1,29 @@
+services:
+  - type: web
+    runtime: static
+    name: coopkeeper-web
+    buildCommand: echo "Static frontend ready"
+    staticPublishPath: ./frontend
+    domains:
+      - www.coopkeeper.net
+
+  - type: web
+    runtime: python
+    name: coopkeeper-api
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start.py
+    healthCheckPath: /health
+    domains:
+      - api.coopkeeper.net
+    envVars:
+      - key: ENV
+        value: prod
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://coopkeeper.net,https://www.coopkeeper.net
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false

@@ -1,12 +1,10 @@
 from contextlib import asynccontextmanager
 from datetime import date
-import json
 import os
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -23,11 +21,14 @@ from app.routers.cleaning_logs import router as cleaning_logs_router
 from app.routers.common import commit_and_refresh, get_owned_or_404
 from app.routers.dashboard import router as dashboard_router
 from app.routers.eggs import router as eggs_router
-from app.settings import APP_ENV, APP_TITLE, APP_VERSION, CORS_ORIGINS, FRONTEND_API_BASE_URL
+from app.settings import APP_TITLE, APP_VERSION, CORS_ORIGINS
 
 ENV = os.getenv("ENV", "dev")
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 FRONTEND_INDEX = FRONTEND_DIR / "index.html"
+FRONTEND_CONFIG = FRONTEND_DIR / "config.js"
+FRONTEND_SCRIPT = FRONTEND_DIR / "app.js"
+FRONTEND_STYLES = FRONTEND_DIR / "styles.css"
 TOP_LEVEL_RESOURCES = [
     "/auth",
     "/chickens",
@@ -148,22 +149,27 @@ def ensure_optional_chicken_exists(session: Session, chicken_id: int | None, use
 def root():
     return {"message": "CoopKeeper API is running"}
 
+
+@app.get("/styles.css", include_in_schema=False)
+def read_frontend_styles():
+    return FileResponse(FRONTEND_STYLES, media_type="text/css")
+
+
+@app.get("/app.js", include_in_schema=False)
+def read_frontend_script():
+    return FileResponse(FRONTEND_SCRIPT, media_type="application/javascript")
+
+
+@app.get("/config.js", include_in_schema=False)
+@app.get("/app-config.js", include_in_schema=False)
+def read_frontend_config():
+    return FileResponse(FRONTEND_CONFIG, media_type="application/javascript")
+
+
 @app.get("/app", include_in_schema=False)
 @app.get("/app/", include_in_schema=False)
 def read_frontend():
     return FileResponse(FRONTEND_INDEX)
-
-
-@app.get("/app-config.js", include_in_schema=False)
-def read_frontend_config():
-    payload = {
-        "apiBaseUrl": FRONTEND_API_BASE_URL,
-        "environment": APP_ENV,
-    }
-    return Response(
-        content=f"window.CoopKeeperConfig = {json.dumps(payload)};",
-        media_type="application/javascript",
-    )
 
 
 @app.get("/health")

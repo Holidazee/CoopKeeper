@@ -12,6 +12,7 @@ const DEFAULT_SORTS = {
 };
 
 const API_BASE_URL = String(window.CoopKeeperConfig?.apiBaseUrl || "").replace(/\/$/, "");
+const API_DOCS_URL = String(window.CoopKeeperConfig?.docsUrl || "").trim();
 
 const api = {
   signup: (payload) =>
@@ -155,6 +156,7 @@ const elements = {
   authPanel: document.querySelector("#auth-panel"),
   authBadge: document.querySelector("#auth-badge"),
   authNotice: document.querySelector("#auth-notice"),
+  apiDocsLink: document.querySelector("#api-docs-link"),
   appShell: document.querySelector("#app-shell"),
   logoutButton: document.querySelector("#logout-button"),
   loginForm: document.querySelector("#login-form"),
@@ -273,6 +275,7 @@ const formConfig = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  configurePublicLinks();
   setDefaultDates();
   bindEvents();
   updateDateFilterButtons();
@@ -283,6 +286,20 @@ document.addEventListener("DOMContentLoaded", () => {
     loadApp();
   }
 });
+
+function configurePublicLinks() {
+  if (!elements.apiDocsLink) {
+    return;
+  }
+
+  if (API_DOCS_URL) {
+    elements.apiDocsLink.href = API_DOCS_URL;
+    elements.apiDocsLink.classList.remove("hidden");
+    return;
+  }
+
+  elements.apiDocsLink.classList.add("hidden");
+}
 
 function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLoginSubmit);
