@@ -129,15 +129,11 @@ def ensure_optional_chicken_exists(session: Session, chicken_id: int | None, use
         get_chicken_or_404(session, chicken_id, user_id)
 
 
-@app.get("/")
-def read_root():
-    return {
-        "app_name": app.title,
-        "status": "ok",
-        "version": app.version,
-        "available_resources": TOP_LEVEL_RESOURCES,
-    }
+from fastapi.responses import RedirectResponse
 
+@app.get("/", include_in_schema=False)
+def read_root():
+    return FileResponse(FRONTEND_INDEX)
 
 @app.get("/app", include_in_schema=False)
 @app.get("/app/", include_in_schema=False)
