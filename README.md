@@ -253,4 +253,10 @@ python start.py
 
 ## 📄 License
 
-MIT (or update if different)
+MIT 
+
+---
+
+📌 Author
+
+Built by Taylor Burris
