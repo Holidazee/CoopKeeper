@@ -79,14 +79,13 @@
       </section>
 
       <div id="app-shell" class="hidden">
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="section-label">Overview</p>
+        <section class="panel overview-panel">
+          <div class="panel-header overview-header">
+            <div class="panel-heading">
               <h2>Dashboard</h2>
-            </div>
-            <div class="panel-tools">
               <p id="dashboard-status" class="section-status">Loading...</p>
+            </div>
+            <div class="panel-tools panel-tools-compact">
               <div id="date-filter-group" class="filter-group" aria-label="Date range filter">
                 <button type="button" class="button button-secondary button-small filter-button" data-range="7">
                   Last 7 Days
@@ -108,40 +107,39 @@
               </div>
             </div>
           </div>
-          <p class="panel-helper">Date filtering applies to the dashboard, eggs, feed, expenses, and cleaning logs.</p>
+          <p class="panel-helper">Date filters apply across the dashboard, charts, and record cards.</p>
           <p id="dashboard-error" class="message message-error hidden" role="alert"></p>
-          <div class="stats-grid">
+          <div class="stats-grid kpi-grid">
             <article class="stat-card">
-              <span class="stat-label">Total chickens</span>
+              <span class="stat-label">Total Chickens</span>
               <strong id="dashboard-total-chickens" class="stat-value">-</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-label">Total eggs</span>
+              <span class="stat-label">Total Eggs</span>
               <strong id="dashboard-total-eggs" class="stat-value">-</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-label">Total expenses</span>
+              <span class="stat-label">Total Expenses</span>
               <strong id="dashboard-average-eggs" class="stat-value">-</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-label">Cost per dozen eggs</span>
+              <span class="stat-label">Cost Per Dozen</span>
               <strong id="dashboard-cost-per-dozen" class="stat-value">-</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-label">Last cleaned</span>
+              <span class="stat-label">Last Cleaning Date</span>
               <strong id="dashboard-last-cleaned" class="stat-value stat-value-small">-</strong>
             </article>
-            <article class="stat-card stat-card-wide">
-              <span class="stat-label">Latest egg record</span>
+            <article class="stat-card">
+              <span class="stat-label">Latest Egg Entry</span>
               <strong id="dashboard-latest-egg" class="stat-value stat-value-small">-</strong>
             </article>
           </div>
 
           <div class="dashboard-chart-grid">
-            <article class="chart-card">
+            <article class="chart-card dashboard-card">
               <div class="chart-header">
-                <div>
-                  <p class="section-label">Trend</p>
+                <div class="panel-heading">
                   <h3>Egg Production Over Time</h3>
                 </div>
                 <p id="egg-chart-summary" class="chart-summary">-</p>
@@ -150,10 +148,9 @@
               <div id="egg-chart" class="chart-canvas" aria-label="Egg production chart"></div>
             </article>
 
-            <article class="chart-card">
+            <article class="chart-card dashboard-card">
               <div class="chart-header">
-                <div>
-                  <p class="section-label">Trend</p>
+                <div class="panel-heading">
                   <h3>Expenses Over Time</h3>
                 </div>
                 <p id="expense-chart-summary" class="chart-summary">-</p>
@@ -163,30 +160,28 @@
             </article>
           </div>
 
-          <article class="chart-card alerts-panel">
+          <article class="chart-card dashboard-card alerts-panel">
             <div class="chart-header">
-              <div>
-                <p class="section-label">Attention</p>
+              <div class="panel-heading">
                 <h3>Alerts</h3>
               </div>
               <p id="alerts-status" class="chart-summary">Loading...</p>
             </div>
             <p id="alerts-error" class="message message-error hidden" role="alert"></p>
             <p id="alerts-notice" class="message hidden" aria-live="polite"></p>
-            <p id="alerts-empty" class="message hidden">No alerts right now. You're all caught up.</p>
+            <p id="alerts-empty" class="message empty-state hidden">No alerts right now. You're all caught up.</p>
             <ul id="alerts-list" class="alert-list"></ul>
           </article>
         </section>
 
-        <div class="content-grid">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-label">Records</p>
+        <div class="content-grid dashboard-records-grid">
+          <section class="panel panel-span-2 chickens-panel">
+            <div class="panel-header record-header">
+              <div class="panel-heading">
                 <h2>Chickens</h2>
-              </div>
-              <div class="panel-tools">
                 <p id="chickens-status" class="section-status">Loading...</p>
+              </div>
+              <div class="panel-tools panel-tools-compact">
                 <button id="chicken-toggle-button" type="button" class="button button-secondary button-small">
                   + Add Chicken
                 </button>
@@ -194,7 +189,7 @@
             </div>
             <p id="chickens-error" class="message message-error hidden" role="alert"></p>
             <p id="chickens-notice" class="message hidden" aria-live="polite"></p>
-            <p id="chickens-empty" class="message hidden">Add your first chicken to get started.</p>
+            <p id="chickens-empty" class="message empty-state hidden">Add your first chicken to get started.</p>
             <ul id="chickens-list" class="item-list"></ul>
 
             <div id="chicken-form-panel" class="subsection form-panel hidden">
@@ -224,13 +219,12 @@
           </section>
 
           <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-label">Records</p>
+            <div class="panel-header record-header">
+              <div class="panel-heading">
                 <h2>Eggs</h2>
-              </div>
-              <div class="panel-tools">
                 <p id="eggs-status" class="section-status">Loading...</p>
+              </div>
+              <div class="panel-tools panel-tools-compact">
                 <label class="sort-control" for="eggs-sort-select">
                   <span>Sort</span>
                   <select id="eggs-sort-select">
@@ -247,14 +241,14 @@
             </div>
             <p id="eggs-error" class="message message-error hidden" role="alert"></p>
             <p id="eggs-notice" class="message hidden" aria-live="polite"></p>
-            <p id="eggs-empty" class="message hidden">No egg records yet.</p>
+            <p id="eggs-empty" class="message empty-state hidden">No egg records yet.</p>
             <div class="table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Count</th>
-                    <th>Actions</th>
+                    <th class="cell-date">Date</th>
+                    <th class="cell-numeric">Count</th>
+                    <th class="cell-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="eggs-list"></tbody>
@@ -294,86 +288,12 @@
           </section>
 
           <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-label">Records</p>
-                <h2>Feed</h2>
-              </div>
-              <div class="panel-tools">
-                <p id="feed-status" class="section-status">Loading...</p>
-                <label class="sort-control" for="feed-sort-select">
-                  <span>Sort</span>
-                  <select id="feed-sort-select">
-                    <option value="date_desc">Newest first</option>
-                    <option value="date_asc">Oldest first</option>
-                    <option value="amount_desc">Largest amount</option>
-                    <option value="amount_asc">Smallest amount</option>
-                  </select>
-                </label>
-                <button id="feed-toggle-button" type="button" class="button button-secondary button-small">
-                  + Add Feed Record
-                </button>
-              </div>
-            </div>
-            <p id="feed-error" class="message message-error hidden" role="alert"></p>
-            <p id="feed-notice" class="message hidden" aria-live="polite"></p>
-            <p id="feed-empty" class="message hidden">No feed records yet.</p>
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="feed-list"></tbody>
-              </table>
-            </div>
-
-            <div id="feed-form-panel" class="subsection form-panel hidden">
-              <div class="panel-divider"></div>
-              <div class="subsection-header">
-                <h3 id="feed-form-title">Add Feed Record</h3>
-                <button
-                  id="feed-cancel-button"
-                  type="button"
-                  class="button button-secondary button-small hidden"
-                >
-                  Cancel Edit
-                </button>
-              </div>
-              <form id="feed-form" class="stack-form">
-                <label class="field">
-                  <span>Date</span>
-                  <input type="date" name="date" required />
-                </label>
-                <label class="field">
-                  <span>Feed Type</span>
-                  <input type="text" name="feed_type" required placeholder="Layer pellets" />
-                </label>
-                <label class="field">
-                  <span>Amount</span>
-                  <input type="number" name="amount" min="0" step="0.01" required placeholder="10" />
-                </label>
-                <label class="field">
-                  <span>Chicken (optional)</span>
-                  <select name="chicken_id" id="feed-chicken-select"></select>
-                </label>
-                <button id="feed-submit-button" type="submit" class="button">Save Feed Record</button>
-              </form>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-label">Records</p>
+            <div class="panel-header record-header">
+              <div class="panel-heading">
                 <h2>Expenses</h2>
-              </div>
-              <div class="panel-tools">
                 <p id="expenses-status" class="section-status">Loading...</p>
+              </div>
+              <div class="panel-tools panel-tools-compact">
                 <label class="sort-control" for="expenses-sort-select">
                   <span>Sort</span>
                   <select id="expenses-sort-select">
@@ -390,16 +310,16 @@
             </div>
             <p id="expenses-error" class="message message-error hidden" role="alert"></p>
             <p id="expenses-notice" class="message hidden" aria-live="polite"></p>
-            <p id="expenses-empty" class="message hidden">No expenses yet.</p>
+            <p id="expenses-empty" class="message empty-state hidden">No expenses yet.</p>
             <div class="table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
+                    <th class="cell-date">Date</th>
                     <th>Category</th>
                     <th>Description</th>
-                    <th>Amount</th>
-                    <th>Actions</th>
+                    <th class="cell-numeric">Amount</th>
+                    <th class="cell-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="expenses-list"></tbody>
@@ -441,13 +361,84 @@
           </section>
 
           <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-label">Maintenance</p>
-                <h2>Cleaning Log</h2>
+            <div class="panel-header record-header">
+              <div class="panel-heading">
+                <h2>Feed</h2>
+                <p id="feed-status" class="section-status">Loading...</p>
               </div>
-              <div class="panel-tools">
+              <div class="panel-tools panel-tools-compact">
+                <label class="sort-control" for="feed-sort-select">
+                  <span>Sort</span>
+                  <select id="feed-sort-select">
+                    <option value="date_desc">Newest first</option>
+                    <option value="date_asc">Oldest first</option>
+                    <option value="amount_desc">Largest amount</option>
+                    <option value="amount_asc">Smallest amount</option>
+                  </select>
+                </label>
+                <button id="feed-toggle-button" type="button" class="button button-secondary button-small">
+                  + Add Feed Record
+                </button>
+              </div>
+            </div>
+            <p id="feed-error" class="message message-error hidden" role="alert"></p>
+            <p id="feed-notice" class="message hidden" aria-live="polite"></p>
+            <p id="feed-empty" class="message empty-state hidden">No feed records yet.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th class="cell-date">Date</th>
+                    <th>Type</th>
+                    <th class="cell-numeric">Amount</th>
+                    <th class="cell-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="feed-list"></tbody>
+              </table>
+            </div>
+
+            <div id="feed-form-panel" class="subsection form-panel hidden">
+              <div class="panel-divider"></div>
+              <div class="subsection-header">
+                <h3 id="feed-form-title">Add Feed Record</h3>
+                <button
+                  id="feed-cancel-button"
+                  type="button"
+                  class="button button-secondary button-small hidden"
+                >
+                  Cancel Edit
+                </button>
+              </div>
+              <form id="feed-form" class="stack-form">
+                <label class="field">
+                  <span>Date</span>
+                  <input type="date" name="date" required />
+                </label>
+                <label class="field">
+                  <span>Feed Type</span>
+                  <input type="text" name="feed_type" required placeholder="Layer pellets" />
+                </label>
+                <label class="field">
+                  <span>Amount</span>
+                  <input type="number" name="amount" min="0" step="0.01" required placeholder="10" />
+                </label>
+                <label class="field">
+                  <span>Chicken (optional)</span>
+                  <select name="chicken_id" id="feed-chicken-select"></select>
+                </label>
+                <button id="feed-submit-button" type="submit" class="button">Save Feed Record</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header record-header">
+              <div class="panel-heading">
+                <h2>Cleaning Log</h2>
                 <p id="cleaning-status" class="section-status">Loading...</p>
+              </div>
+              <div class="panel-tools panel-tools-compact">
                 <label class="sort-control" for="cleaning-sort-select">
                   <span>Sort</span>
                   <select id="cleaning-sort-select">
@@ -462,15 +453,15 @@
             </div>
             <p id="cleaning-error" class="message message-error hidden" role="alert"></p>
             <p id="cleaning-notice" class="message hidden" aria-live="polite"></p>
-            <p id="cleaning-empty" class="message hidden">No cleaning logs yet.</p>
+            <p id="cleaning-empty" class="message empty-state hidden">No cleaning logs yet.</p>
             <div class="table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
+                    <th class="cell-date">Date</th>
                     <th>Task</th>
                     <th>Notes</th>
-                    <th>Actions</th>
+                    <th class="cell-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="cleaning-list"></tbody>

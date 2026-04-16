@@ -806,6 +806,22 @@ function getEmptyStateText(resource) {
   return "No cleaning logs yet.";
 }
 
+function getResourceStatusText(resource, count) {
+  if (!state.token) {
+    return "—";
+  }
+
+  if (resource === "chicken") {
+    return `${count} ${count === 1 ? "bird" : "birds"}`;
+  }
+
+  if (resource === "expense") {
+    return `${count} ${count === 1 ? "expense" : "expenses"}`;
+  }
+
+  return `${count} ${count === 1 ? "entry" : "entries"}`;
+}
+
 function buildDashboardSummary() {
   const filteredEggs = getFilteredEggs();
   const filteredExpenses = getFilteredExpenses();
@@ -861,26 +877,30 @@ function renderDashboard() {
   hideMessage(elements.dashboardError);
 
   if (!state.token) {
-    elements.dashboardTotalChickens.textContent = "-";
-    elements.dashboardTotalEggs.textContent = "-";
-    elements.dashboardAverageEggs.textContent = "-";
-    elements.dashboardCostPerDozen.textContent = "-";
-    elements.dashboardLastCleaned.textContent = "Sign in to load data.";
-    elements.dashboardLatestEgg.textContent = "Sign in to load data.";
+    elements.dashboardTotalChickens.textContent = "—";
+    elements.dashboardTotalEggs.textContent = "—";
+    elements.dashboardAverageEggs.textContent = "—";
+    elements.dashboardCostPerDozen.textContent = "—";
+    elements.dashboardLastCleaned.textContent = "—";
+    elements.dashboardLatestEgg.textContent = "—";
     return;
   }
 
   elements.dashboardTotalChickens.textContent = String(summary.totalChickens);
   elements.dashboardTotalEggs.textContent = String(summary.totalEggs);
-  elements.dashboardAverageEggs.textContent = formatCurrency(summary.totalExpenses);
-  elements.dashboardCostPerDozen.textContent = formatCurrency(summary.costPerDozenEggs);
+  elements.dashboardAverageEggs.textContent = summary.totalExpenses
+    ? formatCurrency(summary.totalExpenses)
+    : "—";
+  elements.dashboardCostPerDozen.textContent = summary.totalEggs
+    ? formatCurrency(summary.costPerDozenEggs)
+    : "—";
   elements.dashboardLastCleaned.textContent = describeLastCleaned(summary.lastCleaningLog);
   elements.dashboardLatestEgg.textContent = describeLatestEgg(summary.latestEggRecord);
 }
 
 function describeLastCleaned(record) {
   if (!record) {
-    return state.token ? "No cleaning logs in this range." : "Sign in to load data.";
+    return "—";
   }
 
   return formatLongDate(record.date);
@@ -888,7 +908,7 @@ function describeLastCleaned(record) {
 
 function describeLatestEgg(record) {
   if (!record) {
-    return state.token ? "No egg records in this range." : "Sign in to load data.";
+    return "—";
   }
 
   return `${formatLongDate(record.date)} | ${record.count} eggs`;
@@ -923,15 +943,11 @@ function renderAlerts() {
         <strong>${escapeHtml(alert.message)}</strong>
         <span class="alert-meta">${escapeHtml(formatDateTime(alert.created_at))} | ${escapeHtml(capitalize(alert.severity))}</span>
       </div>
-      <div class="table-actions">
-        <button type="button" class="button button-secondary button-small" data-action="read">Mark read</button>
-        <button type="button" class="button button-secondary button-small button-danger" data-action="delete">
-          Delete
-        </button>
-      </div>
+      <div class="table-actions alert-actions"></div>
     `;
-    item.querySelector('[data-action="read"]').addEventListener("click", () => handleAlertMarkRead(alert.id));
-    item.querySelector('[data-action="delete"]').addEventListener("click", () => handleAlertDelete(alert.id));
+    const actionsCell = item.querySelector(".table-actions");
+    actionsCell.appendChild(createActionButton("Mark read", () => handleAlertMarkRead(alert.id)));
+    actionsCell.appendChild(createActionButton("Delete", () => handleAlertDelete(alert.id), true));
     elements.alertsList.appendChild(item);
   }
 }
@@ -1200,15 +1216,11 @@ function renderChickens() {
         <strong>${escapeHtml(chicken.name)}</strong>
         <span class="item-meta">${escapeHtml(chicken.breed || "Breed not set")}</span>
       </div>
-      <div class="item-actions">
-        <button type="button" class="button button-secondary button-small" data-action="edit">Edit</button>
-        <button type="button" class="button button-secondary button-small button-danger" data-action="delete">
-          Delete
-        </button>
-      </div>
+      <div class="item-actions"></div>
     `;
-    item.querySelector('[data-action="edit"]').addEventListener("click", () => startChickenEdit(chicken.id));
-    item.querySelector('[data-action="delete"]').addEventListener("click", () => handleChickenDelete(chicken.id));
+    const actionsCell = item.querySelector(".item-actions");
+    actionsCell.appendChild(createActionButton("Edit", () => startChickenEdit(chicken.id)));
+    actionsCell.appendChild(createActionButton("Delete", () => handleChickenDelete(chicken.id), true));
     elements.chickensList.appendChild(item);
   }
 }
@@ -1234,9 +1246,9 @@ function renderEggs() {
   for (const egg of eggs) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${escapeHtml(formatLongDate(egg.date))}</td>
-      <td>${egg.count}</td>
-      <td class="table-actions"></td>
+      <td class="cell-date">${escapeHtml(formatLongDate(egg.date))}</td>
+      <td class="cell-numeric">${egg.count}</td>
+      <td class="table-actions cell-actions"></td>
     `;
 
     const actionsCell = row.querySelector(".table-actions");
@@ -1267,10 +1279,10 @@ function renderFeedRecords() {
   for (const feedRecord of feedRecords) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${escapeHtml(formatLongDate(feedRecord.date))}</td>
+      <td class="cell-date">${escapeHtml(formatLongDate(feedRecord.date))}</td>
       <td>${escapeHtml(feedRecord.feed_type)}</td>
-      <td>${escapeHtml(formatNumber(feedRecord.amount))}</td>
-      <td class="table-actions"></td>
+      <td class="cell-numeric">${escapeHtml(formatNumber(feedRecord.amount))}</td>
+      <td class="table-actions cell-actions"></td>
     `;
 
     const actionsCell = row.querySelector(".table-actions");
@@ -1301,11 +1313,13 @@ function renderExpenses() {
   for (const expense of expenses) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${escapeHtml(formatLongDate(expense.date))}</td>
+      <td class="cell-date">${escapeHtml(formatLongDate(expense.date))}</td>
       <td>${escapeHtml(expense.category)}</td>
-      <td>${escapeHtml(expense.description || "-")}</td>
-      <td>${escapeHtml(formatCurrency(expense.amount))}</td>
-      <td class="table-actions"></td>
+      <td class="cell-truncate">
+        <span class="truncate-text">${escapeHtml(expense.description || "-")}</span>
+      </td>
+      <td class="cell-numeric">${escapeHtml(formatCurrency(expense.amount))}</td>
+      <td class="table-actions cell-actions"></td>
     `;
 
     const actionsCell = row.querySelector(".table-actions");
@@ -1336,10 +1350,12 @@ function renderCleaningLogs() {
   for (const cleaningLog of cleaningLogs) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${escapeHtml(formatLongDate(cleaningLog.date))}</td>
+      <td class="cell-date">${escapeHtml(formatLongDate(cleaningLog.date))}</td>
       <td>${escapeHtml(cleaningLog.task_type)}</td>
-      <td>${escapeHtml(cleaningLog.notes || "-")}</td>
-      <td class="table-actions"></td>
+      <td class="cell-truncate">
+        <span class="truncate-text">${escapeHtml(cleaningLog.notes || "-")}</span>
+      </td>
+      <td class="table-actions cell-actions"></td>
     `;
 
     const actionsCell = row.querySelector(".table-actions");
@@ -1402,8 +1418,9 @@ function renderAlertLoading() {
 function createActionButton(label, handler, isDanger = false) {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = `button button-secondary button-small${isDanger ? " button-danger" : ""}`;
+  button.className = `button button-secondary button-small row-action${isDanger ? " button-danger" : ""}`;
   button.textContent = label;
+  button.setAttribute("aria-label", label);
   button.addEventListener("click", handler);
   return button;
 }
@@ -1621,7 +1638,7 @@ async function loadChickens() {
     renderChickens();
     renderEggs();
     renderFeedRecords();
-    setStatus(elements.chickensStatus, `${state.chickens.length} loaded`);
+    setStatus(elements.chickensStatus, getResourceStatusText("chicken", state.chickens.length));
   } catch (error) {
     state.chickens = [];
     renderChickenOptions();
@@ -1637,7 +1654,7 @@ async function loadChickens() {
     renderFeedRecords();
     refreshDashboard();
     if (!elements.chickensError.textContent) {
-      setStatus(elements.chickensStatus, `${state.chickens.length} loaded`);
+      setStatus(elements.chickensStatus, getResourceStatusText("chicken", state.chickens.length));
     }
   }
 }
@@ -1653,7 +1670,7 @@ async function loadEggs() {
   try {
     state.eggs = await api.getEggs();
     renderEggs();
-    setStatus(elements.eggsStatus, `${getVisibleEggs().length} shown`);
+    setStatus(elements.eggsStatus, getResourceStatusText("egg", getVisibleEggs().length));
   } catch (error) {
     state.eggs = [];
     renderEggs();
@@ -1664,7 +1681,7 @@ async function loadEggs() {
     renderEggs();
     refreshDashboard();
     if (!elements.eggsError.textContent) {
-      setStatus(elements.eggsStatus, `${getVisibleEggs().length} shown`);
+      setStatus(elements.eggsStatus, getResourceStatusText("egg", getVisibleEggs().length));
     }
   }
 }
@@ -1678,7 +1695,7 @@ async function loadFeedRecords() {
   try {
     state.feedRecords = await api.getFeedRecords();
     renderFeedRecords();
-    setStatus(elements.feedStatus, `${getVisibleFeedRecords().length} shown`);
+    setStatus(elements.feedStatus, getResourceStatusText("feed", getVisibleFeedRecords().length));
   } catch (error) {
     state.feedRecords = [];
     renderFeedRecords();
@@ -1688,7 +1705,7 @@ async function loadFeedRecords() {
     state.loading.feed = false;
     renderFeedRecords();
     if (!elements.feedError.textContent) {
-      setStatus(elements.feedStatus, `${getVisibleFeedRecords().length} shown`);
+      setStatus(elements.feedStatus, getResourceStatusText("feed", getVisibleFeedRecords().length));
     }
   }
 }
@@ -1704,7 +1721,7 @@ async function loadExpenses() {
   try {
     state.expenses = await api.getExpenses();
     renderExpenses();
-    setStatus(elements.expensesStatus, `${getVisibleExpenses().length} shown`);
+    setStatus(elements.expensesStatus, getResourceStatusText("expense", getVisibleExpenses().length));
   } catch (error) {
     state.expenses = [];
     renderExpenses();
@@ -1715,7 +1732,7 @@ async function loadExpenses() {
     renderExpenses();
     refreshDashboard();
     if (!elements.expensesError.textContent) {
-      setStatus(elements.expensesStatus, `${getVisibleExpenses().length} shown`);
+      setStatus(elements.expensesStatus, getResourceStatusText("expense", getVisibleExpenses().length));
     }
   }
 }
@@ -1730,7 +1747,7 @@ async function loadCleaningLogs() {
   try {
     state.cleaningLogs = await api.getCleaningLogs();
     renderCleaningLogs();
-    setStatus(elements.cleaningStatus, `${getVisibleCleaningLogs().length} shown`);
+    setStatus(elements.cleaningStatus, getResourceStatusText("cleaning", getVisibleCleaningLogs().length));
   } catch (error) {
     state.cleaningLogs = [];
     renderCleaningLogs();
@@ -1741,7 +1758,7 @@ async function loadCleaningLogs() {
     renderCleaningLogs();
     refreshDashboard();
     if (!elements.cleaningError.textContent) {
-      setStatus(elements.cleaningStatus, `${getVisibleCleaningLogs().length} shown`);
+      setStatus(elements.cleaningStatus, getResourceStatusText("cleaning", getVisibleCleaningLogs().length));
     }
   }
 }
