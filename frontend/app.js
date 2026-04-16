@@ -808,19 +808,42 @@ function getEmptyStateText(resource) {
 
 function buildDashboardSummary() {
   const filteredEggs = getFilteredEggs();
-  const filteredExpenses = getFilteredExpenses();
+  const filteredFeedRecords = getFilteredFeedRecords();
   const filteredCleaningLogs = getFilteredCleaningLogs();
-  const totalEggs = filteredEggs.reduce((sum, record) => sum + Number(record.count || 0), 0);
-  const totalExpenses = filteredExpenses.reduce((sum, record) => sum + Number(record.amount || 0), 0);
-  const latestEggRecord = [...filteredEggs].sort((left, right) => sortByDate(left, right, "desc"))[0] || null;
+
+  const totalEggs = filteredEggs.reduce(
+    (sum, record) => sum + Number(record.count || 0),
+    0
+  );
+
+  // Only count feed costs (this fixes the inflated price issue)
+  const totalFeedCost = filteredFeedRecords.reduce(
+    (sum, record) => sum + Number(record.cost || 0),
+    0
+  );
+
+  const latestEggRecord =
+    [...filteredEggs].sort((left, right) =>
+      sortByDate(left, right, "desc")
+    )[0] || null;
+
   const lastCleaningLog =
-    [...filteredCleaningLogs].sort((left, right) => sortByDate(left, right, "desc"))[0] || null;
+    [...filteredCleaningLogs].sort((left, right) =>
+      sortByDate(left, right, "desc")
+    )[0] || null;
 
   return {
     totalChickens: state.chickens.length,
     totalEggs,
-    averageEggsPerChicken: state.chickens.length ? totalEggs / state.chickens.length : 0,
-    costPerDozenEggs: totalEggs ? (totalExpenses / totalEggs) * 12 : 0,
+    averageEggsPerChicken: state.chickens.length
+      ? totalEggs / state.chickens.length
+      : 0,
+
+    // 🔥 FIXED: now based only on feed cost
+    costPerDozenEggs: totalEggs
+      ? (totalFeedCost / totalEggs) * 12
+      : 0,
+
     lastCleaningLog,
     latestEggRecord,
   };
@@ -1200,7 +1223,7 @@ function renderEggs() {
   elements.eggsList.innerHTML = "";
 
   if (state.loading.eggs && state.eggs.length === 0) {
-    renderTableLoading(elements.eggsList, 4);
+    renderTableLoading(elements.eggsList, 3);
     elements.eggsEmpty.classList.add("hidden");
     return;
   }
@@ -1219,7 +1242,6 @@ function renderEggs() {
     row.innerHTML = `
       <td>${escapeHtml(formatLongDate(egg.date))}</td>
       <td>${egg.count}</td>
-      <td>${escapeHtml(getChickenName(egg.chicken_id))}</td>
       <td class="table-actions"></td>
     `;
 
