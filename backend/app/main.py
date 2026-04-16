@@ -147,7 +147,7 @@ def ensure_optional_chicken_exists(session: Session, chicken_id: int | None, use
 
 @app.get("/")
 def root():
-    return {"message": "CoopKeeper API is running"}
+    return FileResponse(FRONTEND_INDEX)
 
 
 @app.get("/styles.css", include_in_schema=False)
