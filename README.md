@@ -1,124 +1,58 @@
-# CoopKeeper Deployment Notes
+# 🐔 CoopKeeper
 
-CoopKeeper is a single FastAPI app that serves both the API and the MVP frontend.
-That makes deployment straightforward: one backend process, one database, and one
-set of environment variables.
+CoopKeeper is a full-stack web application for managing backyard chickens, tracking flock data, and monitoring coop operations.
 
-## Environment variables
+Built with FastAPI and PostgreSQL, it demonstrates real-world backend architecture, authentication, and deployment-ready design in a clean, single-service setup.
 
-Start from `backend/.env.example`.
+---
 
-Required:
+## ⚡ Features
 
-- `DATABASE_URL`
-- `SECRET_KEY` outside local development
+- 🔐 User authentication and secure API access  
+- 🐔 Chicken record management  
+- 📊 Simple dashboard for tracking flock data  
+- 🌐 Full-stack architecture (API + frontend served together)  
+- ⚙️ Environment-based configuration (local, staging, production)  
+- 🐳 Docker support for database setup  
 
-Common:
+---
 
-- `APP_ENV=local|staging|production`
-- `APP_TITLE`
-- `APP_VERSION`
-- `ACCESS_TOKEN_EXPIRE_MINUTES`
-- `FRONTEND_API_BASE_URL`
-- `CORS_ORIGINS`
-- `HOST`
-- `PORT`
-- `WEB_CONCURRENCY`
+## 🛠️ Tech Stack
 
-Notes:
+- **Backend:** FastAPI (Python)  
+- **Database:** PostgreSQL  
+- **Frontend:** HTML, CSS, JavaScript (served via FastAPI)  
+- **Infra:** Docker, Uvicorn  
 
-- Leave `FRONTEND_API_BASE_URL` empty when the frontend is served by the same backend domain.
-- Set `FRONTEND_API_BASE_URL` only if the frontend will call the API on a different base URL.
-- Set `CORS_ORIGINS` to a comma-separated list only when browsers will call the API from another origin.
+---
 
-## Local development
+## 🧠 Engineering Highlights
 
-1. Create a backend env file from `backend/.env.example`.
-2. Start Postgres with Docker:
+- Clean separation of concerns (routers, models, config)
+- Environment-driven configuration system
+- Token-based authentication
+- Database integration using PostgreSQL
+- Production-ready startup configuration (multi-worker support)
+- API + frontend served from a unified backend for simplified deployment
 
-```bash
-docker compose up -d
-```
+---
 
-3. Install backend dependencies:
+## 💼 Why This Project Matters
 
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
+This project simulates a real-world production system used to manage livestock operations and track operational data.
 
-4. Run the API with reload:
+It demonstrates the ability to design, build, and deploy a complete full-stack application, including:
 
-```bash
-uvicorn app.main:app --reload
-```
+- API design and routing  
+- Authentication and security  
+- Persistent data storage  
+- Environment configuration  
+- Deployment considerations  
 
-Open:
+---
 
-- App: `http://localhost:8000/app`
-- Docs: `http://localhost:8000/docs`
+## 🚀 Local Development
 
-## Staging
+### 1. Setup environment
 
-Use staging as close to production as possible:
-
-- point `DATABASE_URL` to a staging Postgres database
-- set `APP_ENV=staging`
-- set a real `SECRET_KEY`
-- set `CORS_ORIGINS` to the staging frontend domain if the frontend is hosted separately
-- keep `FRONTEND_API_BASE_URL` empty if FastAPI serves the frontend on the same domain
-
-Run the backend with the production startup command:
-
-```bash
-cd backend
-python start.py
-```
-
-## Production
-
-Recommended simple shape:
-
-- run Postgres separately
-- run FastAPI behind a reverse proxy or platform router
-- terminate TLS at the proxy/platform
-- point your real domain to the backend service
-
-Suggested production env:
-
-```env
-APP_ENV=production
-DATABASE_URL=postgresql+psycopg://...
-SECRET_KEY=strong-random-secret
-PORT=8000
-WEB_CONCURRENCY=2
-CORS_ORIGINS=https://your-frontend-domain.com
-FRONTEND_API_BASE_URL=
-```
-
-Production backend startup command:
-
-```bash
-cd backend
-python start.py
-```
-
-The startup script runs:
-
-- `app.main:app`
-- `host=0.0.0.0`
-- `port=$PORT`
-- `workers=$WEB_CONCURRENCY`
-- proxy header support for real deployments
-
-## Deployment checklist
-
-- set `SECRET_KEY`
-- set the real `DATABASE_URL`
-- set `APP_ENV=production`
-- set `CORS_ORIGINS` if the frontend and API are on different origins
-- keep `FRONTEND_API_BASE_URL` empty for same-origin deployments
-- verify `/health` and `/health/db`
-- verify `/app` loads after deployment
+Create a `.env` file from:
