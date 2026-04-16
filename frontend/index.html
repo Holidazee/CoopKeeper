@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CoopKeeper MVP</title>
+    <link rel="stylesheet" href="/app-static/styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">CoopKeeper</p>
+        <h1>Coop Dashboard</h1>
+        <p class="hero-copy">A simple local view of your chickens, eggs, and coop records.</p>
+      </div>
+      <div class="hero-actions">
+        <p id="auth-badge" class="auth-badge">Not signed in</p>
+        <button id="logout-button" type="button" class="button button-secondary hidden">
+          Log Out
+        </button>
+        <a class="hero-link" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+      </div>
+    </header>
+
+    <main class="page">
+      <section id="auth-panel" class="panel auth-panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-label">Access</p>
+            <h2>Sign Up or Log In</h2>
+          </div>
+          <p class="section-status">Local MVP auth</p>
+        </div>
+        <p id="auth-notice" class="message message-neutral">
+          Create an account or log in to access your coop data.
+        </p>
+
+        <div class="auth-grid">
+          <div class="subsection">
+            <h3>Log In</h3>
+            <form id="login-form" class="stack-form">
+              <label class="field">
+                <span>Username</span>
+                <input type="text" name="username" required placeholder="farmerjane" />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input type="password" name="password" required placeholder="Password" />
+              </label>
+              <button type="submit" class="button">Log In</button>
+            </form>
+            <p id="login-form-message" class="message hidden" aria-live="polite"></p>
+          </div>
+
+          <div class="subsection">
+            <h3>Create Account</h3>
+            <form id="signup-form" class="stack-form">
+              <label class="field">
+                <span>Username</span>
+                <input type="text" name="username" required placeholder="farmerjane" />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input type="password" name="password" required placeholder="Password" />
+              </label>
+              <button type="submit" class="button">Sign Up</button>
+            </form>
+            <p id="signup-form-message" class="message hidden" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <div id="app-shell" class="hidden">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Overview</p>
+              <h2>Dashboard</h2>
+            </div>
+            <p id="dashboard-status" class="section-status">Loading...</p>
+          </div>
+          <p id="dashboard-error" class="message message-error hidden" role="alert"></p>
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-label">Total chickens</span>
+              <strong id="dashboard-total-chickens" class="stat-value">-</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Total eggs</span>
+              <strong id="dashboard-total-eggs" class="stat-value">-</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Average eggs per chicken</span>
+              <strong id="dashboard-average-eggs" class="stat-value">-</strong>
+            </article>
+            <article class="stat-card stat-card-wide">
+              <span class="stat-label">Latest egg record</span>
+              <strong id="dashboard-latest-egg" class="stat-value stat-value-small">-</strong>
+            </article>
+          </div>
+
+          <div class="dashboard-chart-grid">
+            <article class="chart-card">
+              <div class="chart-header">
+                <div>
+                  <p class="section-label">Trend</p>
+                  <h3>Egg Production Over Time</h3>
+                </div>
+                <p id="egg-chart-summary" class="chart-summary">-</p>
+              </div>
+              <p id="egg-chart-message" class="message hidden"></p>
+              <div id="egg-chart" class="mini-chart" aria-label="Egg production chart"></div>
+            </article>
+
+            <article class="chart-card">
+              <div class="chart-header">
+                <div>
+                  <p class="section-label">Trend</p>
+                  <h3>Expenses Over Time</h3>
+                </div>
+                <p id="expense-chart-summary" class="chart-summary">-</p>
+              </div>
+              <p id="expense-chart-message" class="message hidden"></p>
+              <div id="expense-chart" class="mini-chart" aria-label="Expenses chart"></div>
+            </article>
+          </div>
+        </section>
+
+        <div class="content-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Records</p>
+                <h2>Chickens</h2>
+              </div>
+              <p id="chickens-status" class="section-status">Loading...</p>
+            </div>
+            <p id="chickens-error" class="message message-error hidden" role="alert"></p>
+            <p id="chickens-empty" class="message hidden">No chickens yet.</p>
+            <ul id="chickens-list" class="item-list"></ul>
+
+            <div class="panel-divider"></div>
+
+            <div class="subsection">
+              <div class="subsection-header">
+                <h3 id="chicken-form-title">Add Chicken</h3>
+                <button
+                  id="chicken-cancel-button"
+                  type="button"
+                  class="button button-secondary button-small hidden"
+                >
+                  Cancel Edit
+                </button>
+              </div>
+              <form id="chicken-form" class="stack-form">
+                <label class="field">
+                  <span>Name</span>
+                  <input type="text" name="name" required placeholder="Henrietta" />
+                </label>
+                <label class="field">
+                  <span>Breed</span>
+                  <input type="text" name="breed" placeholder="Australorp" />
+                </label>
+                <button id="chicken-submit-button" type="submit" class="button">Save Chicken</button>
+              </form>
+              <p id="chicken-form-message" class="message hidden" aria-live="polite"></p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Records</p>
+                <h2>Eggs</h2>
+              </div>
+              <p id="eggs-status" class="section-status">Loading...</p>
+            </div>
+            <p id="eggs-error" class="message message-error hidden" role="alert"></p>
+            <p id="eggs-empty" class="message hidden">No egg records yet.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Count</th>
+                    <th>Chicken</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="eggs-list"></tbody>
+              </table>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="subsection">
+              <div class="subsection-header">
+                <h3 id="egg-form-title">Add Egg Record</h3>
+                <button
+                  id="egg-cancel-button"
+                  type="button"
+                  class="button button-secondary button-small hidden"
+                >
+                  Cancel Edit
+                </button>
+              </div>
+              <form id="egg-form" class="stack-form">
+                <label class="field">
+                  <span>Date</span>
+                  <input type="date" name="date" required />
+                </label>
+                <label class="field">
+                  <span>Count</span>
+                  <input type="number" name="count" min="1" required placeholder="6" />
+                </label>
+                <label class="field">
+                  <span>Chicken</span>
+                  <select name="chicken_id" required id="egg-chicken-select"></select>
+                </label>
+                <button id="egg-submit-button" type="submit" class="button">
+                  Save Egg Record
+                </button>
+              </form>
+              <p id="egg-form-message" class="message hidden" aria-live="polite"></p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Records</p>
+                <h2>Feed</h2>
+              </div>
+              <p id="feed-status" class="section-status">Loading...</p>
+            </div>
+            <p id="feed-error" class="message message-error hidden" role="alert"></p>
+            <p id="feed-empty" class="message hidden">No feed records yet.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Cost</th>
+                    <th>Chicken</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="feed-list"></tbody>
+              </table>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="subsection">
+              <div class="subsection-header">
+                <h3 id="feed-form-title">Add Feed Record</h3>
+                <button
+                  id="feed-cancel-button"
+                  type="button"
+                  class="button button-secondary button-small hidden"
+                >
+                  Cancel Edit
+                </button>
+              </div>
+              <form id="feed-form" class="stack-form">
+                <label class="field">
+                  <span>Date</span>
+                  <input type="date" name="date" required />
+                </label>
+                <label class="field">
+                  <span>Feed Type</span>
+                  <input type="text" name="feed_type" required placeholder="Layer pellets" />
+                </label>
+                <label class="field">
+                  <span>Amount</span>
+                  <input type="number" name="amount" min="0" step="0.01" required placeholder="10" />
+                </label>
+                <label class="field">
+                  <span>Cost</span>
+                  <input type="number" name="cost" min="0" step="0.01" placeholder="18.50" />
+                </label>
+                <label class="field">
+                  <span>Chicken</span>
+                  <select name="chicken_id" id="feed-chicken-select"></select>
+                </label>
+                <button id="feed-submit-button" type="submit" class="button">Save Feed Record</button>
+              </form>
+              <p id="feed-form-message" class="message hidden" aria-live="polite"></p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Records</p>
+                <h2>Expenses</h2>
+              </div>
+              <p id="expenses-status" class="section-status">Loading...</p>
+            </div>
+            <p id="expenses-error" class="message message-error hidden" role="alert"></p>
+            <p id="expenses-empty" class="message hidden">No expenses yet.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="expenses-list"></tbody>
+              </table>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="subsection">
+              <div class="subsection-header">
+                <h3 id="expense-form-title">Add Expense</h3>
+                <button
+                  id="expense-cancel-button"
+                  type="button"
+                  class="button button-secondary button-small hidden"
+                >
+                  Cancel Edit
+                </button>
+              </div>
+              <form id="expense-form" class="stack-form">
+                <label class="field">
+                  <span>Date</span>
+                  <input type="date" name="date" required />
+                </label>
+                <label class="field">
+                  <span>Category</span>
+                  <input type="text" name="category" required placeholder="Supplies" />
+                </label>
+                <label class="field">
+                  <span>Description</span>
+                  <input type="text" name="description" placeholder="New feeder" />
+                </label>
+                <label class="field">
+                  <span>Amount</span>
+                  <input type="number" name="amount" min="0" step="0.01" required placeholder="24.99" />
+                </label>
+                <button id="expense-submit-button" type="submit" class="button">Save Expense</button>
+              </form>
+              <p id="expense-form-message" class="message hidden" aria-live="polite"></p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <script src="/app-config.js"></script>
+    <script type="module" src="/app-static/app.js"></script>
+  </body>
+</html>

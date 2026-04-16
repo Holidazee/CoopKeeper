@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    container_name: coopkeeper_db
+    restart: always
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass123
+      POSTGRES_DB: coopkeeper
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
