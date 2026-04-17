@@ -94,8 +94,6 @@ This keeps the public portfolio URL clean while maintaining a dedicated API.
 
 ## Architecture
 
-## Architecture
-
 ```mermaid
 flowchart TD
     A[User Browser] -->|Login / Requests| B[Frontend<br/>HTML CSS JS]
