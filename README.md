@@ -92,6 +92,55 @@ This keeps the public portfolio URL clean while maintaining a dedicated API.
 
 ---
 
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Frontend<br/>HTML CSS JS<br/>Render Static Site] -->|HTTP Requests| B[FastAPI Backend<br/>REST API]
+    B -->|SQL Queries| C[(PostgreSQL Database)]
+
+    subgraph Infra
+        D[Docker - Local Development]
+        E[Render - Cloud Hosting]
+    end
+
+    D --> B
+    D --> C
+    E --> A
+    E --> B
+```
+
+---
+
+### Components
+
+- **Frontend**
+  - Static site served via Render  
+  - Handles UI and API calls  
+
+- **Backend (FastAPI)**
+  - REST API for application logic  
+  - Handles auth, validation, and business rules  
+
+- **Database (PostgreSQL)**
+  - Stores chickens, eggs, expenses, and logs  
+  - Normalized schema  
+
+- **Infrastructure**
+  - Docker for local development  
+  - Render for production hosting  
+
+---
+
+### Key Design Decisions
+
+- Centralized expense tracking (single source of truth)  
+- Decoupled cleaning logs from financial data  
+- Removed unnecessary per-chicken dependencies  
+- Environment-based config for secure deployment
+
+---
+
 ## Render Setup
 
 The repo includes a root `render.yaml` blueprint with two services:
