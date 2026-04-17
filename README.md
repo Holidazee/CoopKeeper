@@ -94,20 +94,24 @@ This keeps the public portfolio URL clean while maintaining a dedicated API.
 
 ## Architecture
 
+## Architecture
+
 ```mermaid
 flowchart TD
-    A[Frontend<br/>HTML CSS JS<br/>Render Static Site] -->|HTTP Requests| B[FastAPI Backend<br/>REST API]
-    B -->|SQL Queries| C[(PostgreSQL Database)]
+    A[User Browser] -->|Login / Requests| B[Frontend<br/>HTML CSS JS]
+    B -->|API Calls (JWT)| C[FastAPI Backend]
+    C -->|Validate Token| C
+    C -->|SQL Queries| D[(PostgreSQL Database)]
 
     subgraph Infra
-        D[Docker - Local Development]
-        E[Render - Cloud Hosting]
+        E[Docker - Local Dev]
+        F[Render - Hosting]
     end
 
-    D --> B
-    D --> C
-    E --> A
-    E --> B
+    E --> C
+    E --> D
+    F --> B
+    F --> C
 ```
 
 ---
