@@ -96,14 +96,14 @@ This keeps the public portfolio URL clean while maintaining a dedicated API.
 
 ```mermaid
 flowchart TD
-    A[User Browser] -->|Login / Requests| B[Frontend<br/>HTML CSS JS]
-    B -->|API Calls (JWT)| C[FastAPI Backend]
+    A[User Browser] -->|Login / Requests| B[Frontend HTML CSS JS]
+    B -->|API Calls JWT| C[FastAPI Backend]
     C -->|Validate Token| C
     C -->|SQL Queries| D[(PostgreSQL Database)]
 
     subgraph Infra
-        E[Docker - Local Dev]
-        F[Render - Hosting]
+        E[Docker Local Dev]
+        F[Render Hosting]
     end
 
     E --> C
