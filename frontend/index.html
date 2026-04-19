@@ -4,7 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#fffaf3" />
+    <meta name="theme-color" content="#F3EBDB" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%23F3EBDB%22%2F%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%231F1B15%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M10%2032%20Q8%2022%2016%2018%20Q22%2015%2028%2017%20Q33%2018%2036%2022%20Q40%2028%2036%2034%20Q30%2039%2020%2037%20Q13%2036%2010%2032%20Z%22%2F%3E%3Cpath%20d%3D%22M32%2019%20Q35%2013%2040%2014%20Q42%2015%2041%2018%20Q40%2021%2036%2021%22%2F%3E%3Cpath%20d%3D%22M36%2013%20Q37%2011%2038%2013%20Q39%2011%2040%2013%20Q41%2011%2042%2013%22%20stroke%3D%22%23B4541E%22%2F%3E%3Ccircle%20cx%3D%2238%22%20cy%3D%2217%22%20r%3D%221.1%22%20fill%3D%22%231F1B15%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M41%2018%20L43%2018.5%20L41%2019.5%20Z%22%20fill%3D%22%23B4541E%22%20stroke%3D%22%23B4541E%22%2F%3E%3Cpath%20d%3D%22M18%2024%20Q24%2026%2028%2030%22%2F%3E%3Cpath%20d%3D%22M10%2030%20Q5%2026%208%2022%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"
+    />
     <meta
       name="description"
       content="CoopKeeper — a friendly dashboard for tracking chickens, eggs, feed, and expenses."
@@ -14,7 +19,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Caveat:wght@500;600;700&display=swap"
     />
     <link rel="stylesheet" href="/styles.css" />
     <script defer src="/app.js"></script>
@@ -27,12 +32,16 @@
       <div class="topbar-inner">
         <a class="brand" href="#main" aria-label="CoopKeeper home">
           <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M16 4c5 0 9 3.7 9 8.4 0 2.5-1.1 4.8-3 6.4.6 1.1 1.9 2 3.3 2.4.6.1.5 1 0 1.1-2.9.6-6.3.3-8.7-1.6-.2-.2-.5-.2-.8-.2-5.8 0-9-3.6-9-8.1C6.8 7.7 11 4 16 4Z"
-                fill="currentColor"
-              />
-              <circle cx="20" cy="11" r="1.4" fill="#fffaf3" />
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <g fill="none" stroke="#1F1B15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 32 Q8 22 16 18 Q22 15 28 17 Q33 18 36 22 Q40 28 36 34 Q30 39 20 37 Q13 36 10 32 Z" />
+                <path d="M32 19 Q35 13 40 14 Q42 15 41 18 Q40 21 36 21" />
+                <path d="M36 13 Q37 11 38 13 Q39 11 40 13 Q41 11 42 13" stroke="#B4541E" />
+                <circle cx="38" cy="17" r="1.1" fill="#1F1B15" stroke="none" />
+                <path d="M41 18 L43 18.5 L41 19.5 Z" fill="#B4541E" stroke="#B4541E" />
+                <path d="M18 24 Q24 26 28 30" />
+                <path d="M10 30 Q5 26 8 22" />
+              </g>
             </svg>
           </span>
           <span class="brand-text">
@@ -147,7 +156,8 @@
         <!-- Hero: Quick egg tile + date range -->
         <section class="hero" aria-label="Today">
           <div class="hero-left">
-            <div class="hero-eyebrow">Today</div>
+            <p id="hero-welcome" class="hero-welcome">Hi there,</p>
+            <div class="hero-eyebrow" id="hero-date">today</div>
             <h2 class="hero-title">Quick egg log</h2>
             <p class="hero-sub">
               Tap to count eggs collected today. Changes save instantly.
@@ -302,14 +312,33 @@
                 <h3>Chickens</h3>
                 <p id="chickens-status" class="card-sub">—</p>
               </div>
-              <button
-                id="chicken-toggle-button"
-                type="button"
-                class="button button-primary button-small"
-              >
-                + Add Chicken
-              </button>
+              <div class="card-head-actions">
+                <button
+                  id="chicken-edit-mode-button"
+                  type="button"
+                  class="button button-secondary button-small"
+                  data-edit-toggle="chicken"
+                >
+                  Edit
+                </button>
+                <button
+                  id="chicken-delete-mode-button"
+                  type="button"
+                  class="button button-danger button-small"
+                  data-delete-toggle="chicken"
+                >
+                  Delete
+                </button>
+                <button
+                  id="chicken-toggle-button"
+                  type="button"
+                  class="button button-primary button-small"
+                >
+                  + Add Chicken
+                </button>
+              </div>
             </header>
+            <p id="chicken-edit-hint" class="edit-mode-hint hidden"></p>
 
             <section id="chicken-form-panel" class="form-panel hidden">
               <form id="chicken-form" class="form form-inline" novalidate>
@@ -365,6 +394,22 @@
                   </select>
                 </label>
                 <button
+                  id="egg-edit-mode-button"
+                  type="button"
+                  class="button button-secondary button-small"
+                  data-edit-toggle="egg"
+                >
+                  Edit
+                </button>
+                <button
+                  id="egg-delete-mode-button"
+                  type="button"
+                  class="button button-danger button-small"
+                  data-delete-toggle="egg"
+                >
+                  Delete
+                </button>
+                <button
                   id="egg-toggle-button"
                   type="button"
                   class="button button-primary button-small"
@@ -373,6 +418,7 @@
                 </button>
               </div>
             </header>
+            <p id="egg-edit-hint" class="edit-mode-hint hidden"></p>
 
             <section id="egg-form-panel" class="form-panel hidden">
               <form id="egg-form" class="form form-inline" novalidate>
@@ -434,6 +480,22 @@
                   </select>
                 </label>
                 <button
+                  id="feed-edit-mode-button"
+                  type="button"
+                  class="button button-secondary button-small"
+                  data-edit-toggle="feed"
+                >
+                  Edit
+                </button>
+                <button
+                  id="feed-delete-mode-button"
+                  type="button"
+                  class="button button-danger button-small"
+                  data-delete-toggle="feed"
+                >
+                  Delete
+                </button>
+                <button
                   id="feed-toggle-button"
                   type="button"
                   class="button button-primary button-small"
@@ -442,6 +504,7 @@
                 </button>
               </div>
             </header>
+            <p id="feed-edit-hint" class="edit-mode-hint hidden"></p>
 
             <section id="feed-form-panel" class="form-panel hidden">
               <form id="feed-form" class="form form-inline" novalidate>
@@ -511,6 +574,22 @@
                   </select>
                 </label>
                 <button
+                  id="expense-edit-mode-button"
+                  type="button"
+                  class="button button-secondary button-small"
+                  data-edit-toggle="expense"
+                >
+                  Edit
+                </button>
+                <button
+                  id="expense-delete-mode-button"
+                  type="button"
+                  class="button button-danger button-small"
+                  data-delete-toggle="expense"
+                >
+                  Delete
+                </button>
+                <button
                   id="expense-toggle-button"
                   type="button"
                   class="button button-primary button-small"
@@ -519,6 +598,7 @@
                 </button>
               </div>
             </header>
+            <p id="expense-edit-hint" class="edit-mode-hint hidden"></p>
 
             <section id="expense-form-panel" class="form-panel hidden">
               <form id="expense-form" class="form form-inline" novalidate>
@@ -580,6 +660,22 @@
                   </select>
                 </label>
                 <button
+                  id="cleaning-edit-mode-button"
+                  type="button"
+                  class="button button-secondary button-small"
+                  data-edit-toggle="cleaning"
+                >
+                  Edit
+                </button>
+                <button
+                  id="cleaning-delete-mode-button"
+                  type="button"
+                  class="button button-danger button-small"
+                  data-delete-toggle="cleaning"
+                >
+                  Delete
+                </button>
+                <button
                   id="cleaning-toggle-button"
                   type="button"
                   class="button button-primary button-small"
@@ -588,6 +684,7 @@
                 </button>
               </div>
             </header>
+            <p id="cleaning-edit-hint" class="edit-mode-hint hidden"></p>
 
             <section id="cleaning-form-panel" class="form-panel hidden">
               <form id="cleaning-form" class="form form-inline" novalidate>
@@ -626,8 +723,49 @@
           </section>
         </div>
 
+        <!-- CSV Export -->
+        <section class="export-card" aria-label="Export data">
+          <header class="export-head">
+            <h3>Export your data</h3>
+            <p class="export-intro">
+              Download a CSV of your flock's records — pick what you need.
+            </p>
+          </header>
+          <div class="export-grid">
+            <button
+              type="button"
+              class="export-button export-button-all"
+              data-export="all"
+            >
+              <span class="export-button-label">Everything</span>
+              <span class="export-button-hint">One zip per file, all records</span>
+            </button>
+            <button type="button" class="export-button" data-export="eggs">
+              <span class="export-button-label">Egg records</span>
+              <span class="export-button-hint">Date, chicken, count</span>
+            </button>
+            <button type="button" class="export-button" data-export="feed">
+              <span class="export-button-label">Feed</span>
+              <span class="export-button-hint">Date, type, amount, cost</span>
+            </button>
+            <button type="button" class="export-button" data-export="expenses">
+              <span class="export-button-label">Expenses</span>
+              <span class="export-button-hint">Date, category, amount</span>
+            </button>
+            <button type="button" class="export-button" data-export="cleaning">
+              <span class="export-button-label">Cleaning log</span>
+              <span class="export-button-hint">Date, task, notes</span>
+            </button>
+            <button type="button" class="export-button" data-export="chickens">
+              <span class="export-button-label">Chickens</span>
+              <span class="export-button-hint">Name, breed</span>
+            </button>
+          </div>
+          <p id="export-message" class="form-message" aria-live="polite"></p>
+        </section>
+
         <footer class="footer">
-          <span>Made with ☕ for happy flocks · CoopKeeper</span>
+          <span>Made with coffee for happy flocks · CoopKeeper</span>
         </footer>
       </div>
     </main>

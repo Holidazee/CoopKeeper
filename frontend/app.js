@@ -144,6 +144,13 @@ const state = {
     expenseId: null,
     cleaningId: null,
   },
+  editModes: {
+    chicken: "none",
+    egg: "none",
+    feed: "none",
+    expense: "none",
+    cleaning: "none",
+  },
   filters: {
     dateRange: DEFAULT_DATE_RANGE,
   },
@@ -250,8 +257,22 @@ const elements = {
   quickEggPlus: document.querySelector("#quick-egg-plus"),
   quickEggMinus: document.querySelector("#quick-egg-minus"),
   quickEggMessage: document.querySelector("#quick-egg-message"),
+  // Hero welcome
+  heroWelcome: document.querySelector("#hero-welcome"),
+  heroDate: document.querySelector("#hero-date"),
   // Auth tabs
   authTabs: Array.from(document.querySelectorAll("[data-auth-tab]")),
+  // Edit/Delete mode toggles
+  editModeButtons: Array.from(document.querySelectorAll("[data-edit-toggle]")),
+  deleteModeButtons: Array.from(document.querySelectorAll("[data-delete-toggle]")),
+  chickenEditHint: document.querySelector("#chicken-edit-hint"),
+  eggEditHint: document.querySelector("#egg-edit-hint"),
+  feedEditHint: document.querySelector("#feed-edit-hint"),
+  expenseEditHint: document.querySelector("#expense-edit-hint"),
+  cleaningEditHint: document.querySelector("#cleaning-edit-hint"),
+  // CSV export
+  exportButtons: Array.from(document.querySelectorAll("[data-export]")),
+  exportMessage: document.querySelector("#export-message"),
 };
 
 const formConfig = {
@@ -365,6 +386,16 @@ function bindEvents() {
   if (elements.quickEggChicken) {
     elements.quickEggChicken.addEventListener("change", renderQuickEgg);
   }
+
+  for (const button of elements.editModeButtons) {
+    button.addEventListener("click", () => toggleEditMode(button.dataset.editToggle, "edit"));
+  }
+  for (const button of elements.deleteModeButtons) {
+    button.addEventListener("click", () => toggleEditMode(button.dataset.deleteToggle, "delete"));
+  }
+  for (const button of elements.exportButtons) {
+    button.addEventListener("click", () => handleCsvExport(button.dataset.export));
+  }
 }
 
 async function loadApp() {
@@ -450,6 +481,8 @@ function renderAuthState(noticeText = "") {
   elements.authBadge.textContent = isAuthenticated
     ? `Signed in as ${state.username || "User"}`
     : "Not signed in";
+
+  renderHeroWelcome();
 
   if (noticeText) {
     showMessage(elements.authNotice, noticeText, "neutral");
@@ -1096,6 +1129,13 @@ function buildLineChartSvg(points, { ariaLabel, yLabel, valueFormatter }) {
     .map((point, index) => `${index === 0 ? "M" : "L"} ${xPosition(index)} ${yPosition(point.value)}`)
     .join(" ");
 
+  const baseY = margin.top + innerHeight;
+  const areaPath = points.length
+    ? `M ${xPosition(0)} ${baseY} ${points
+        .map((point, index) => `L ${xPosition(index)} ${yPosition(point.value)}`)
+        .join(" ")} L ${xPosition(points.length - 1)} ${baseY} Z`
+    : "";
+
   const gridLines = ticks
     .map((tick) => {
       const y = yPosition(tick);
@@ -1138,6 +1178,7 @@ function buildLineChartSvg(points, { ariaLabel, yLabel, valueFormatter }) {
       ${gridLines}
       <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + innerHeight}" class="chart-axis-line" />
       <line x1="${margin.left}" y1="${margin.top + innerHeight}" x2="${width - margin.right}" y2="${margin.top + innerHeight}" class="chart-axis-line" />
+      ${areaPath ? `<path d="${areaPath}" class="chart-area-fill" />` : ""}
       <path d="${path}" class="chart-line-path" />
       ${circles}
       ${xLabels}
@@ -1234,6 +1275,7 @@ function renderChickens() {
   if (state.loading.chickens && state.chickens.length === 0) {
     renderChickenLoading();
     elements.chickensEmpty.classList.add("hidden");
+    applyEditModeClasses("chicken");
     return;
   }
 
@@ -1241,6 +1283,7 @@ function renderChickens() {
   if (chickens.length === 0) {
     elements.chickensEmpty.classList.remove("hidden");
     elements.chickensEmpty.textContent = getEmptyStateText("chicken");
+    applyEditModeClasses("chicken");
     return;
   }
 
@@ -1248,27 +1291,28 @@ function renderChickens() {
 
   for (const chicken of chickens) {
     const item = document.createElement("li");
-    item.className = "item-card";
+    item.className = "record-row";
     item.innerHTML = `
-      <div class="item-card-main">
+      <div class="record-cell-main">
         <strong>${escapeHtml(chicken.name)}</strong>
-        <span class="item-meta">${escapeHtml(chicken.breed || "Breed not set")}</span>
+        <span class="meta">${escapeHtml(chicken.breed || "Breed not set")}</span>
       </div>
-      <div class="item-actions"></div>
+      <span class="record-cell-value"></span>
     `;
-    const actionsCell = item.querySelector(".item-actions");
-    actionsCell.appendChild(createActionButton("Edit", () => startChickenEdit(chicken.id)));
-    actionsCell.appendChild(createActionButton("Delete", () => handleChickenDelete(chicken.id), true));
+    attachRowClickHandler(item, "chicken", chicken.id);
     elements.chickensList.appendChild(item);
   }
+
+  applyEditModeClasses("chicken");
 }
 
 function renderEggs() {
   elements.eggsList.innerHTML = "";
 
   if (state.loading.eggs && state.eggs.length === 0) {
-    renderTableLoading(elements.eggsList, 3);
+    renderListLoading(elements.eggsList, 3);
     elements.eggsEmpty.classList.add("hidden");
+    applyEditModeClasses("egg");
     return;
   }
 
@@ -1276,32 +1320,37 @@ function renderEggs() {
   if (eggs.length === 0) {
     elements.eggsEmpty.classList.remove("hidden");
     elements.eggsEmpty.textContent = getEmptyStateText("egg");
+    applyEditModeClasses("egg");
     return;
   }
 
   elements.eggsEmpty.classList.add("hidden");
 
   for (const egg of eggs) {
-    const row = document.createElement("tr");
+    const row = document.createElement("li");
+    row.className = "record-row";
+    const chickenLabel = egg.chicken_id == null ? "General coop" : getChickenName(egg.chicken_id);
     row.innerHTML = `
-      <td class="cell-date">${escapeHtml(formatLongDate(egg.date))}</td>
-      <td class="cell-numeric">${egg.count}</td>
-      <td class="table-actions cell-actions"></td>
+      <span class="record-cell-date">${escapeHtml(formatLongDate(egg.date))}</span>
+      <div class="record-cell-main">
+        <span class="meta">${escapeHtml(chickenLabel)}</span>
+      </div>
+      <span class="record-cell-value">${egg.count} ${egg.count === 1 ? "egg" : "eggs"}</span>
     `;
-
-    const actionsCell = row.querySelector(".table-actions");
-    actionsCell.appendChild(createActionButton("Edit", () => startEggEdit(egg.id)));
-    actionsCell.appendChild(createActionButton("Delete", () => handleEggDelete(egg.id), true));
+    attachRowClickHandler(row, "egg", egg.id);
     elements.eggsList.appendChild(row);
   }
+
+  applyEditModeClasses("egg");
 }
 
 function renderFeedRecords() {
   elements.feedList.innerHTML = "";
 
   if (state.loading.feed && state.feedRecords.length === 0) {
-    renderTableLoading(elements.feedList, 4);
+    renderListLoading(elements.feedList, 4);
     elements.feedEmpty.classList.add("hidden");
+    applyEditModeClasses("feed");
     return;
   }
 
@@ -1309,33 +1358,37 @@ function renderFeedRecords() {
   if (feedRecords.length === 0) {
     elements.feedEmpty.classList.remove("hidden");
     elements.feedEmpty.textContent = getEmptyStateText("feed");
+    applyEditModeClasses("feed");
     return;
   }
 
   elements.feedEmpty.classList.add("hidden");
 
   for (const feedRecord of feedRecords) {
-    const row = document.createElement("tr");
+    const row = document.createElement("li");
+    row.className = "record-row";
     row.innerHTML = `
-      <td class="cell-date">${escapeHtml(formatLongDate(feedRecord.date))}</td>
-      <td>${escapeHtml(feedRecord.feed_type)}</td>
-      <td class="cell-numeric">${escapeHtml(formatNumber(feedRecord.amount))}</td>
-      <td class="table-actions cell-actions"></td>
+      <span class="record-cell-date">${escapeHtml(formatLongDate(feedRecord.date))}</span>
+      <div class="record-cell-main">
+        <strong>${escapeHtml(feedRecord.feed_type)}</strong>
+        <span class="meta">${escapeHtml(formatNumber(feedRecord.amount))} lbs${feedRecord.cost != null ? " · " + escapeHtml(formatCurrency(feedRecord.cost)) : ""}</span>
+      </div>
+      <span class="record-cell-value">${escapeHtml(formatNumber(feedRecord.amount))} lbs</span>
     `;
-
-    const actionsCell = row.querySelector(".table-actions");
-    actionsCell.appendChild(createActionButton("Edit", () => startFeedEdit(feedRecord.id)));
-    actionsCell.appendChild(createActionButton("Delete", () => handleFeedDelete(feedRecord.id), true));
+    attachRowClickHandler(row, "feed", feedRecord.id);
     elements.feedList.appendChild(row);
   }
+
+  applyEditModeClasses("feed");
 }
 
 function renderExpenses() {
   elements.expensesList.innerHTML = "";
 
   if (state.loading.expenses && state.expenses.length === 0) {
-    renderTableLoading(elements.expensesList, 5);
+    renderListLoading(elements.expensesList, 5);
     elements.expensesEmpty.classList.add("hidden");
+    applyEditModeClasses("expense");
     return;
   }
 
@@ -1343,36 +1396,37 @@ function renderExpenses() {
   if (expenses.length === 0) {
     elements.expensesEmpty.classList.remove("hidden");
     elements.expensesEmpty.textContent = getEmptyStateText("expense");
+    applyEditModeClasses("expense");
     return;
   }
 
   elements.expensesEmpty.classList.add("hidden");
 
   for (const expense of expenses) {
-    const row = document.createElement("tr");
+    const row = document.createElement("li");
+    row.className = "record-row";
     row.innerHTML = `
-      <td class="cell-date">${escapeHtml(formatLongDate(expense.date))}</td>
-      <td>${escapeHtml(expense.category)}</td>
-      <td class="cell-truncate">
-        <span class="truncate-text">${escapeHtml(expense.description || "-")}</span>
-      </td>
-      <td class="cell-numeric">${escapeHtml(formatCurrency(expense.amount))}</td>
-      <td class="table-actions cell-actions"></td>
+      <span class="record-cell-date">${escapeHtml(formatLongDate(expense.date))}</span>
+      <div class="record-cell-main">
+        <strong>${escapeHtml(expense.category)}</strong>
+        <span class="meta truncate-text">${escapeHtml(expense.description || "—")}</span>
+      </div>
+      <span class="record-cell-value">${escapeHtml(formatCurrency(expense.amount))}</span>
     `;
-
-    const actionsCell = row.querySelector(".table-actions");
-    actionsCell.appendChild(createActionButton("Edit", () => startExpenseEdit(expense.id)));
-    actionsCell.appendChild(createActionButton("Delete", () => handleExpenseDelete(expense.id), true));
+    attachRowClickHandler(row, "expense", expense.id);
     elements.expensesList.appendChild(row);
   }
+
+  applyEditModeClasses("expense");
 }
 
 function renderCleaningLogs() {
   elements.cleaningList.innerHTML = "";
 
   if (state.loading.cleaning && state.cleaningLogs.length === 0) {
-    renderTableLoading(elements.cleaningList, 4);
+    renderListLoading(elements.cleaningList, 4);
     elements.cleaningEmpty.classList.add("hidden");
+    applyEditModeClasses("cleaning");
     return;
   }
 
@@ -1380,58 +1434,59 @@ function renderCleaningLogs() {
   if (cleaningLogs.length === 0) {
     elements.cleaningEmpty.classList.remove("hidden");
     elements.cleaningEmpty.textContent = getEmptyStateText("cleaning");
+    applyEditModeClasses("cleaning");
     return;
   }
 
   elements.cleaningEmpty.classList.add("hidden");
 
   for (const cleaningLog of cleaningLogs) {
-    const row = document.createElement("tr");
+    const row = document.createElement("li");
+    row.className = "record-row";
     row.innerHTML = `
-      <td class="cell-date">${escapeHtml(formatLongDate(cleaningLog.date))}</td>
-      <td>${escapeHtml(cleaningLog.task_type)}</td>
-      <td class="cell-truncate">
-        <span class="truncate-text">${escapeHtml(cleaningLog.notes || "-")}</span>
-      </td>
-      <td class="table-actions cell-actions"></td>
+      <span class="record-cell-date">${escapeHtml(formatLongDate(cleaningLog.date))}</span>
+      <div class="record-cell-main">
+        <strong>${escapeHtml(cleaningLog.task_type || "Cleaning")}</strong>
+        <span class="meta truncate-text">${escapeHtml(cleaningLog.notes || "—")}</span>
+      </div>
+      <span class="record-cell-value"></span>
     `;
-
-    const actionsCell = row.querySelector(".table-actions");
-    actionsCell.appendChild(createActionButton("Edit", () => startCleaningEdit(cleaningLog.id)));
-    actionsCell.appendChild(
-      createActionButton("Delete", () => handleCleaningDelete(cleaningLog.id), true),
-    );
+    attachRowClickHandler(row, "cleaning", cleaningLog.id);
     elements.cleaningList.appendChild(row);
   }
+
+  applyEditModeClasses("cleaning");
 }
 
 function renderChickenLoading() {
   const placeholderCount = 3;
   for (let index = 0; index < placeholderCount; index += 1) {
     const item = document.createElement("li");
-    item.className = "item-card loading-card";
+    item.className = "record-row loading-card";
     item.innerHTML = `
-      <div class="item-card-main">
+      <div class="record-cell-main">
         <span class="skeleton-line skeleton-line-title"></span>
         <span class="skeleton-line"></span>
       </div>
-      <div class="item-actions">
-        <span class="skeleton-pill"></span>
-      </div>
+      <span class="skeleton-pill"></span>
     `;
     elements.chickensList.appendChild(item);
   }
 }
 
-function renderTableLoading(tbody, columnCount) {
+function renderListLoading(listElement, _columnCount) {
   const rowCount = 3;
   for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
-    const row = document.createElement("tr");
-    row.className = "loading-row";
-    row.innerHTML = Array.from({ length: columnCount })
-      .map(() => '<td><span class="skeleton-line"></span></td>')
-      .join("");
-    tbody.appendChild(row);
+    const item = document.createElement("li");
+    item.className = "record-row loading-card";
+    item.innerHTML = `
+      <span class="skeleton-line skeleton-line-title"></span>
+      <div class="record-cell-main">
+        <span class="skeleton-line"></span>
+      </div>
+      <span class="skeleton-pill"></span>
+    `;
+    listElement.appendChild(item);
   }
 }
 
@@ -2398,4 +2453,261 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+/* ============================================================
+   Welcome message, edit-mode rows, CSV export helpers
+============================================================ */
+
+function renderHeroWelcome() {
+  if (!elements.heroWelcome || !elements.heroDate) return;
+  const name = state.username ? capitalize(state.username) : "there";
+  const greeting = getDayGreeting();
+  elements.heroWelcome.textContent = state.token
+    ? `${greeting}, ${name} —`
+    : "Welcome to CoopKeeper —";
+  elements.heroDate.textContent = formatLongDate(getTodayISO()).toLowerCase();
+}
+
+function getDayGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Up late";
+  if (hour < 12) return "Morning";
+  if (hour < 17) return "Afternoon";
+  if (hour < 21) return "Evening";
+  return "Evening";
+}
+
+const EDIT_MODE_CONFIG = {
+  chicken: {
+    listEl: () => elements.chickensList,
+    hintEl: () => elements.chickenEditHint,
+    editBtn: () => document.querySelector("#chicken-edit-mode-button"),
+    deleteBtn: () => document.querySelector("#chicken-delete-mode-button"),
+    editLabel: "Tap a chicken to edit.",
+    deleteLabel: "Tap a chicken to delete.",
+  },
+  egg: {
+    listEl: () => elements.eggsList,
+    hintEl: () => elements.eggEditHint,
+    editBtn: () => document.querySelector("#egg-edit-mode-button"),
+    deleteBtn: () => document.querySelector("#egg-delete-mode-button"),
+    editLabel: "Tap a row to edit.",
+    deleteLabel: "Tap a row to delete.",
+  },
+  feed: {
+    listEl: () => elements.feedList,
+    hintEl: () => elements.feedEditHint,
+    editBtn: () => document.querySelector("#feed-edit-mode-button"),
+    deleteBtn: () => document.querySelector("#feed-delete-mode-button"),
+    editLabel: "Tap a row to edit.",
+    deleteLabel: "Tap a row to delete.",
+  },
+  expense: {
+    listEl: () => elements.expensesList,
+    hintEl: () => elements.expenseEditHint,
+    editBtn: () => document.querySelector("#expense-edit-mode-button"),
+    deleteBtn: () => document.querySelector("#expense-delete-mode-button"),
+    editLabel: "Tap a row to edit.",
+    deleteLabel: "Tap a row to delete.",
+  },
+  cleaning: {
+    listEl: () => elements.cleaningList,
+    hintEl: () => elements.cleaningEditHint,
+    editBtn: () => document.querySelector("#cleaning-edit-mode-button"),
+    deleteBtn: () => document.querySelector("#cleaning-delete-mode-button"),
+    editLabel: "Tap an entry to edit.",
+    deleteLabel: "Tap an entry to delete.",
+  },
+};
+
+function toggleEditMode(resource, mode) {
+  const current = state.editModes[resource];
+  state.editModes[resource] = current === mode ? "none" : mode;
+  applyEditModeClasses(resource);
+}
+
+function applyEditModeClasses(resource) {
+  const config = EDIT_MODE_CONFIG[resource];
+  if (!config) return;
+  const mode = state.editModes[resource];
+  const list = config.listEl();
+  const hint = config.hintEl();
+  const editBtn = config.editBtn();
+  const deleteBtn = config.deleteBtn();
+
+  if (list) {
+    list.classList.toggle("is-edit-mode", mode === "edit");
+    list.classList.toggle("is-delete-mode", mode === "delete");
+  }
+  if (editBtn) editBtn.classList.toggle("is-active", mode === "edit");
+  if (deleteBtn) deleteBtn.classList.toggle("is-active", mode === "delete");
+  if (hint) {
+    if (mode === "edit") {
+      hint.textContent = config.editLabel;
+      hint.classList.remove("hidden", "is-delete");
+    } else if (mode === "delete") {
+      hint.textContent = config.deleteLabel;
+      hint.classList.remove("hidden");
+      hint.classList.add("is-delete");
+    } else {
+      hint.textContent = "";
+      hint.classList.add("hidden");
+      hint.classList.remove("is-delete");
+    }
+  }
+}
+
+function applyAllEditModeClasses() {
+  for (const resource of Object.keys(EDIT_MODE_CONFIG)) {
+    applyEditModeClasses(resource);
+  }
+}
+
+function attachRowClickHandler(row, resource, id) {
+  row.addEventListener("click", () => {
+    const mode = state.editModes[resource];
+    if (mode === "edit") {
+      const starter = {
+        chicken: startChickenEdit,
+        egg: startEggEdit,
+        feed: startFeedEdit,
+        expense: startExpenseEdit,
+        cleaning: startCleaningEdit,
+      }[resource];
+      if (starter) starter(id);
+      state.editModes[resource] = "none";
+      applyEditModeClasses(resource);
+    } else if (mode === "delete") {
+      const deleter = {
+        chicken: handleChickenDelete,
+        egg: handleEggDelete,
+        feed: handleFeedDelete,
+        expense: handleExpenseDelete,
+        cleaning: handleCleaningDelete,
+      }[resource];
+      if (deleter) deleter(id);
+      state.editModes[resource] = "none";
+      applyEditModeClasses(resource);
+    }
+  });
+}
+
+/* ============================================================
+   CSV Export
+============================================================ */
+
+function handleCsvExport(kind) {
+  if (!state.token) {
+    setExportMessage("Sign in first.", "error");
+    return;
+  }
+  try {
+    if (kind === "all") {
+      downloadCsv(buildEggsCsv(), "coopkeeper-eggs.csv");
+      downloadCsv(buildFeedCsv(), "coopkeeper-feed.csv");
+      downloadCsv(buildExpensesCsv(), "coopkeeper-expenses.csv");
+      downloadCsv(buildCleaningCsv(), "coopkeeper-cleaning.csv");
+      downloadCsv(buildChickensCsv(), "coopkeeper-chickens.csv");
+      setExportMessage("Downloaded 5 CSVs.", "success");
+      return;
+    }
+    if (kind === "eggs") {
+      downloadCsv(buildEggsCsv(), "coopkeeper-eggs.csv");
+    } else if (kind === "feed") {
+      downloadCsv(buildFeedCsv(), "coopkeeper-feed.csv");
+    } else if (kind === "expenses") {
+      downloadCsv(buildExpensesCsv(), "coopkeeper-expenses.csv");
+    } else if (kind === "cleaning") {
+      downloadCsv(buildCleaningCsv(), "coopkeeper-cleaning.csv");
+    } else if (kind === "chickens") {
+      downloadCsv(buildChickensCsv(), "coopkeeper-chickens.csv");
+    }
+    setExportMessage("Download started.", "success");
+  } catch (error) {
+    setExportMessage(error.message || "Export failed.", "error");
+  }
+}
+
+function setExportMessage(text, tone) {
+  if (!elements.exportMessage) return;
+  elements.exportMessage.textContent = text || "";
+  if (tone) {
+    elements.exportMessage.setAttribute("data-tone", tone);
+  } else {
+    elements.exportMessage.removeAttribute("data-tone");
+  }
+}
+
+function csvCell(value) {
+  const str = value === null || value === undefined ? "" : String(value);
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replaceAll('"', '""')}"`;
+  }
+  return str;
+}
+
+function toCsv(headers, rows) {
+  const lines = [headers.map(csvCell).join(",")];
+  for (const row of rows) {
+    lines.push(row.map(csvCell).join(","));
+  }
+  return lines.join("\r\n");
+}
+
+function buildEggsCsv() {
+  const rows = [...state.eggs]
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((e) => [
+      e.date,
+      e.chicken_id == null ? "" : getChickenName(e.chicken_id),
+      e.count,
+    ]);
+  return toCsv(["Date", "Chicken", "Count"], rows);
+}
+
+function buildFeedCsv() {
+  const rows = [...state.feedRecords]
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((f) => [
+      f.date,
+      f.feed_type,
+      f.amount,
+      f.cost == null ? "" : f.cost,
+      f.chicken_id == null ? "" : getChickenName(f.chicken_id),
+    ]);
+  return toCsv(["Date", "Feed type", "Amount (lbs)", "Cost", "Chicken"], rows);
+}
+
+function buildExpensesCsv() {
+  const rows = [...state.expenses]
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((x) => [x.date, x.category, x.description || "", x.amount]);
+  return toCsv(["Date", "Category", "Description", "Amount"], rows);
+}
+
+function buildCleaningCsv() {
+  const rows = [...state.cleaningLogs]
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((c) => [c.date, c.task_type || "", c.notes || ""]);
+  return toCsv(["Date", "Task", "Notes"], rows);
+}
+
+function buildChickensCsv() {
+  const rows = [...state.chickens]
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+    .map((c) => [c.name, c.breed || ""]);
+  return toCsv(["Name", "Breed"], rows);
+}
+
+function downloadCsv(content, filename) {
+  const blob = new Blob(["\ufeff" + content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
