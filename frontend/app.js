@@ -1,7 +1,10 @@
 const STORAGE_KEYS = {
   token: "coookeeper.authToken",
   username: "coookeeper.username",
+  theme: "coookeeper.theme",
 };
+
+const THEMES = { light: "light", dark: "dark" };
 
 const DEFAULT_DATE_RANGE = "30";
 const DEFAULT_SORTS = {
@@ -244,6 +247,7 @@ const elements = {
   cleaningFormTitle: document.querySelector("#cleaning-form-title"),
   cleaningSubmitButton: document.querySelector("#cleaning-submit-button"),
   cleaningCancelButton: document.querySelector("#cleaning-cancel-button"),
+  themeToggle: document.querySelector("#theme-toggle"),
 };
 
 const formConfig = {
@@ -275,6 +279,7 @@ const formConfig = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   configurePublicLinks();
   setDefaultDates();
   bindEvents();
@@ -286,6 +291,42 @@ document.addEventListener("DOMContentLoaded", () => {
     loadApp();
   }
 });
+
+function initTheme() {
+  const stored = window.localStorage.getItem(STORAGE_KEYS.theme);
+  const prefersDark =
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const initialTheme =
+    stored === THEMES.light || stored === THEMES.dark
+      ? stored
+      : prefersDark
+        ? THEMES.dark
+        : THEMES.light;
+  applyTheme(initialTheme);
+}
+
+function applyTheme(theme) {
+  const resolved = theme === THEMES.dark ? THEMES.dark : THEMES.light;
+  document.documentElement.setAttribute("data-theme", resolved);
+  if (elements.themeToggle) {
+    const nextTheme = resolved === THEMES.dark ? THEMES.light : THEMES.dark;
+    elements.themeToggle.setAttribute("aria-label", `Switch to ${nextTheme} mode`);
+    elements.themeToggle.setAttribute("title", `Switch to ${nextTheme} mode`);
+    elements.themeToggle.setAttribute(
+      "aria-pressed",
+      String(resolved === THEMES.dark),
+    );
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") === THEMES.dark
+    ? THEMES.dark
+    : THEMES.light;
+  const next = current === THEMES.dark ? THEMES.light : THEMES.dark;
+  applyTheme(next);
+  window.localStorage.setItem(STORAGE_KEYS.theme, next);
+}
 
 function configurePublicLinks() {
   if (!elements.apiDocsLink) {
@@ -327,6 +368,10 @@ function bindEvents() {
 
   for (const button of elements.dateFilterButtons) {
     button.addEventListener("click", handleDateFilterClick);
+  }
+
+  if (elements.themeToggle) {
+    elements.themeToggle.addEventListener("click", toggleTheme);
   }
 }
 

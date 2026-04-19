@@ -36,6 +36,14 @@ def get_chicken_or_404(session: Session, chicken_id: int, user_id: int) -> Chick
     return get_owned_or_404(session, Chicken, chicken_id, user_id, "Chicken not found")
 
 
+def ensure_optional_chicken_exists(
+    session: Session, chicken_id: int | None, user_id: int
+) -> None:
+    """Validate that a referenced chicken belongs to the user, when provided."""
+    if chicken_id is not None:
+        get_chicken_or_404(session, chicken_id, user_id)
+
+
 @router.get("/chickens", response_model=list[ChickenRead])
 def list_chickens(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user)):
     with SessionLocal() as session:

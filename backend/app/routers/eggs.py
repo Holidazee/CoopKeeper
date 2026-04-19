@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.db.database import SessionLocal
-from app.models import Chicken, Egg, User
+from app.models import Egg, User
+from app.routers.chickens import ensure_optional_chicken_exists
 from app.routers.common import commit_and_refresh, get_owned_or_404
 
 router = APIRouter()
@@ -24,10 +25,6 @@ class EggRead(EggCreate):
     id: int
 
     model_config = READ_MODEL_CONFIG
-
-
-def get_chicken_or_404(session: Session, chicken_id: int, user_id: int) -> Chicken:
-    return get_owned_or_404(session, Chicken, chicken_id, user_id, "Chicken not found")
 
 
 def get_egg_or_404(session: Session, egg_id: int, user_id: int) -> Egg:
@@ -51,8 +48,7 @@ def list_eggs(
 @router.post("/eggs", response_model=EggRead, status_code=201)
 def create_egg(egg: EggCreate, current_user: User = Depends(get_current_user)):
     with SessionLocal() as session:
-        if egg.chicken_id is not None:
-            get_chicken_or_404(session, egg.chicken_id, current_user.id)
+        ensure_optional_chicken_exists(session, egg.chicken_id, current_user.id)
         new_egg = Egg(
             date=egg.date,
             count=egg.count,
@@ -77,8 +73,7 @@ def update_egg(
 ):
     with SessionLocal() as session:
         egg = get_egg_or_404(session, egg_id, current_user.id)
-        if egg_update.chicken_id is not None:
-            get_chicken_or_404(session, egg_update.chicken_id, current_user.id)
+        ensure_optional_chicken_exists(session, egg_update.chicken_id, current_user.id)
         egg.date = egg_update.date
         egg.count = egg_update.count
         egg.chicken_id = egg_update.chicken_id

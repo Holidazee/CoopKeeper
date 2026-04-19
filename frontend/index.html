@@ -1,207 +1,298 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CoopKeeper MVP</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="CoopKeeper — a friendly dashboard for tracking chickens, eggs, feed, and expenses." />
+    <title>CoopKeeper — Smart coop management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
+    />
     <link rel="stylesheet" href="/styles.css" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("coookeeper.theme");
+          var prefersDark =
+            window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var theme = stored === "light" || stored === "dark" ? stored : prefersDark ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          /* no-op */
+        }
+      })();
+    </script>
   </head>
   <body>
-    <header class="hero">
-      <div>
-        <p class="eyebrow">CoopKeeper</p>
-        <h1>Coop Dashboard</h1>
-        <p class="hero-copy">A simple local view of your chickens, eggs, and coop records.</p>
-      </div>
-      <div class="hero-actions">
-        <p id="auth-badge" class="auth-badge">Not signed in</p>
-        <button id="logout-button" type="button" class="button button-secondary hidden">
-          Log Out
-        </button>
-        <a
-          id="api-docs-link"
-          class="hero-link hidden"
-          href="#"
-          target="_blank"
-          rel="noreferrer"
-        >
-          API Docs
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="topbar" role="banner">
+      <div class="topbar-inner">
+        <a class="brand" href="#main" aria-label="CoopKeeper home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M16 3.5c5.4 0 9.7 4 9.7 9.1 0 2.8-1.2 5.3-3.3 7 .7 1.2 2.1 2.2 3.6 2.6.7.2.7 1.2 0 1.3-3.1.6-6.8.3-9.4-1.8-.3-.2-.6-.3-.9-.3-6.3 0-9.7-3.9-9.7-8.8C6 7.6 10.6 3.5 16 3.5Z"
+                fill="currentColor"
+              />
+              <circle cx="20.5" cy="11" r="1.6" fill="var(--surface-1)" />
+            </svg>
+          </span>
+          <span class="brand-text">
+            <span class="brand-name">CoopKeeper</span>
+            <span class="brand-tag">Smart coop management</span>
+          </span>
         </a>
+
+        <div class="topbar-actions">
+          <button
+            id="theme-toggle"
+            class="icon-button"
+            type="button"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+            </svg>
+          </button>
+          <span id="auth-badge" class="auth-badge">Not signed in</span>
+          <a
+            id="api-docs-link"
+            class="topbar-link hidden"
+            href="#"
+            target="_blank"
+            rel="noreferrer"
+          >
+            API docs
+          </a>
+          <button id="logout-button" type="button" class="button button-secondary button-small hidden">
+            Log out
+          </button>
+        </div>
       </div>
     </header>
 
-    <main class="page">
+    <main id="main" class="page">
       <section id="auth-panel" class="panel auth-panel">
-        <div class="panel-header">
-          <div>
-            <p class="section-label">Access</p>
-            <h2>Sign Up or Log In</h2>
-          </div>
-          <p class="section-status">Local MVP auth</p>
+        <div class="auth-hero">
+          <p class="eyebrow">Welcome to CoopKeeper</p>
+          <h1>Your flock, beautifully organized</h1>
+          <p class="auth-subtitle">
+            Track chickens, egg production, feed, expenses, and cleaning — all in one tidy dashboard.
+          </p>
+          <ul class="auth-highlights">
+            <li><span class="dot dot-primary"></span> Log eggs, feed, and expenses in seconds</li>
+            <li><span class="dot dot-accent"></span> Spot trends with simple charts</li>
+            <li><span class="dot dot-warn"></span> Friendly reminders so nothing slips</li>
+          </ul>
         </div>
-        <p id="auth-notice" class="message message-neutral">
-          Create an account or log in to access your coop data.
-        </p>
 
-        <div class="auth-grid">
-          <div class="subsection">
-            <h3>Log In</h3>
-            <form id="login-form" class="stack-form">
-              <label class="field">
-                <span>Username</span>
-                <input type="text" name="username" required placeholder="farmerjane" />
-              </label>
-              <label class="field">
-                <span>Password</span>
-                <input type="password" name="password" required placeholder="Password" />
-              </label>
-              <button type="submit" class="button">Log In</button>
-            </form>
-            <p id="login-form-message" class="message hidden" aria-live="polite"></p>
-          </div>
+        <div class="auth-card">
+          <p id="auth-notice" class="message message-neutral">
+            Create an account or log in to access your coop data.
+          </p>
 
-          <div class="subsection">
-            <h3>Create Account</h3>
-            <form id="signup-form" class="stack-form">
-              <label class="field">
-                <span>Username</span>
-                <input type="text" name="username" required placeholder="farmerjane" />
-              </label>
-              <label class="field">
-                <span>Password</span>
-                <input type="password" name="password" required placeholder="Password" />
-              </label>
-              <button type="submit" class="button">Sign Up</button>
-            </form>
-            <p id="signup-form-message" class="message hidden" aria-live="polite"></p>
+          <div class="auth-grid">
+            <div class="subsection">
+              <h3>Log in</h3>
+              <form id="login-form" class="stack-form">
+                <label class="field">
+                  <span>Username</span>
+                  <input type="text" name="username" required placeholder="farmerjane" autocomplete="username" />
+                </label>
+                <label class="field">
+                  <span>Password</span>
+                  <input type="password" name="password" required placeholder="••••••••" autocomplete="current-password" />
+                </label>
+                <button type="submit" class="button">Log in</button>
+              </form>
+              <p id="login-form-message" class="message hidden" aria-live="polite"></p>
+            </div>
+
+            <div class="subsection">
+              <h3>Create account</h3>
+              <form id="signup-form" class="stack-form">
+                <label class="field">
+                  <span>Username</span>
+                  <input type="text" name="username" required placeholder="farmerjane" autocomplete="username" />
+                </label>
+                <label class="field">
+                  <span>Password</span>
+                  <input type="password" name="password" required placeholder="Pick a strong one" autocomplete="new-password" />
+                </label>
+                <button type="submit" class="button">Sign up</button>
+              </form>
+              <p id="signup-form-message" class="message hidden" aria-live="polite"></p>
+            </div>
           </div>
         </div>
       </section>
 
       <div id="app-shell" class="hidden">
-        <section class="panel overview-panel">
-          <div class="panel-header overview-header">
-            <div class="panel-heading">
-              <h2>Dashboard</h2>
-              <p id="dashboard-status" class="section-status">Loading...</p>
-            </div>
-            <div class="panel-tools panel-tools-compact">
-              <div id="date-filter-group" class="filter-group" aria-label="Date range filter">
-                <button type="button" class="button button-secondary button-small filter-button" data-range="7">
-                  Last 7 Days
-                </button>
-                <button
-                  type="button"
-                  class="button button-secondary button-small filter-button"
-                  data-range="30"
-                >
-                  Last 30 Days
-                </button>
-                <button
-                  type="button"
-                  class="button button-secondary button-small filter-button"
-                  data-range="all"
-                >
-                  All Time
-                </button>
-              </div>
+        <section class="hero-band">
+          <div class="hero-band-copy">
+            <p class="eyebrow">Dashboard</p>
+            <h1>Your flock at a glance</h1>
+            <p class="hero-band-sub">
+              A snapshot of your coop — eggs, expenses, and everything that keeps the birds happy.
+            </p>
+          </div>
+          <div class="hero-band-tools">
+            <p id="dashboard-status" class="section-status">Loading...</p>
+            <div
+              id="date-filter-group"
+              class="segmented"
+              role="group"
+              aria-label="Date range filter"
+            >
+              <button type="button" class="filter-button" data-range="7">7d</button>
+              <button type="button" class="filter-button" data-range="30">30d</button>
+              <button type="button" class="filter-button" data-range="all">All</button>
             </div>
           </div>
-          <p class="panel-helper">Date filters apply across the dashboard, charts, and record cards.</p>
-          <p id="dashboard-error" class="message message-error hidden" role="alert"></p>
-          <div class="stats-grid kpi-grid">
-            <article class="stat-card">
-              <span class="stat-label">Total Chickens</span>
-              <strong id="dashboard-total-chickens" class="stat-value">-</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-label">Total Eggs</span>
-              <strong id="dashboard-total-eggs" class="stat-value">-</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-label">Total Expenses</span>
-              <strong id="dashboard-average-eggs" class="stat-value">-</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-label">Cost Per Dozen</span>
-              <strong id="dashboard-cost-per-dozen" class="stat-value">-</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-label">Last Cleaning Date</span>
-              <strong id="dashboard-last-cleaned" class="stat-value stat-value-small">-</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-label">Latest Egg Entry</span>
-              <strong id="dashboard-latest-egg" class="stat-value stat-value-small">-</strong>
-            </article>
-          </div>
+        </section>
 
-          <div class="dashboard-chart-grid">
-            <article class="chart-card dashboard-card">
-              <div class="chart-header">
-                <div class="panel-heading">
-                  <h3>Egg Production Over Time</h3>
-                </div>
-                <p id="egg-chart-summary" class="chart-summary">-</p>
-              </div>
-              <p id="egg-chart-message" class="message hidden"></p>
-              <div id="egg-chart" class="chart-canvas" aria-label="Egg production chart"></div>
-            </article>
+        <p id="dashboard-error" class="message message-error hidden" role="alert"></p>
 
-            <article class="chart-card dashboard-card">
-              <div class="chart-header">
-                <div class="panel-heading">
-                  <h3>Expenses Over Time</h3>
-                </div>
-                <p id="expense-chart-summary" class="chart-summary">-</p>
-              </div>
-              <p id="expense-chart-message" class="message hidden"></p>
-              <div id="expense-chart" class="chart-canvas" aria-label="Expenses chart"></div>
-            </article>
-          </div>
+        <section class="kpi-grid" aria-label="Key stats">
+          <article class="stat-card">
+            <span class="stat-icon stat-icon-chicken" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 0 5 2 5 5 0 2-1 3-1 4 0 2 2 3 2 6 0 2-2 3-6 3s-6-1-6-3c0-3 2-4 2-6 0-1-1-2-1-4 0-3 2-5 5-5Z"/><circle cx="14" cy="8" r="1" fill="currentColor"/></svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-label">Total chickens</span>
+              <strong id="dashboard-total-chickens" class="stat-value">—</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <span class="stat-icon stat-icon-egg" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 0 7 5 7 10s-3 8-7 8-7-3-7-8 3-10 7-10Z"/></svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-label">Total eggs</span>
+              <strong id="dashboard-total-eggs" class="stat-value">—</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <span class="stat-icon stat-icon-money" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M7 9v6M17 9v6"/></svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-label">Total expenses</span>
+              <strong id="dashboard-average-eggs" class="stat-value">—</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <span class="stat-icon stat-icon-trend" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-label">Cost per dozen</span>
+              <strong id="dashboard-cost-per-dozen" class="stat-value">—</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <span class="stat-icon stat-icon-clean" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13l3 3 3-3 3 3 3-3 3 3"/><path d="M4 19h16"/><path d="M12 4v5"/></svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-label">Last cleaning</span>
+              <strong id="dashboard-last-cleaned" class="stat-value stat-value-small">—</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <span class="stat-icon stat-icon-calendar" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-label">Latest egg entry</span>
+              <strong id="dashboard-latest-egg" class="stat-value stat-value-small">—</strong>
+            </div>
+          </article>
+        </section>
 
-          <article class="chart-card dashboard-card alerts-panel">
-            <div class="chart-header">
+        <section class="chart-grid">
+          <article class="panel chart-card">
+            <header class="chart-header">
               <div class="panel-heading">
-                <h3>Alerts</h3>
+                <h3>Egg production</h3>
+                <p class="section-status">Over selected range</p>
               </div>
-              <p id="alerts-status" class="chart-summary">Loading...</p>
-            </div>
+              <p id="egg-chart-summary" class="chart-summary">—</p>
+            </header>
+            <p id="egg-chart-message" class="message hidden"></p>
+            <div id="egg-chart" class="chart-canvas" aria-label="Egg production chart"></div>
+          </article>
+
+          <article class="panel chart-card">
+            <header class="chart-header">
+              <div class="panel-heading">
+                <h3>Expenses</h3>
+                <p class="section-status">Over selected range</p>
+              </div>
+              <p id="expense-chart-summary" class="chart-summary">—</p>
+            </header>
+            <p id="expense-chart-message" class="message hidden"></p>
+            <div id="expense-chart" class="chart-canvas" aria-label="Expenses chart"></div>
+          </article>
+        </section>
+
+        <section class="alerts-section">
+          <article class="panel alerts-panel">
+            <header class="panel-header">
+              <div class="panel-heading">
+                <h2>Alerts</h2>
+                <p id="alerts-status" class="section-status">Loading...</p>
+              </div>
+            </header>
             <p id="alerts-error" class="message message-error hidden" role="alert"></p>
             <p id="alerts-notice" class="message hidden" aria-live="polite"></p>
-            <p id="alerts-empty" class="message empty-state hidden">No alerts right now. You're all caught up.</p>
+            <p id="alerts-empty" class="message empty-state hidden">
+              No alerts right now — you're all caught up.
+            </p>
             <ul id="alerts-list" class="alert-list"></ul>
           </article>
         </section>
 
-        <div class="content-grid dashboard-records-grid">
-          <section class="panel panel-span-2 chickens-panel">
-            <div class="panel-header record-header">
+        <section class="records-grid">
+          <article class="panel panel-wide chickens-panel">
+            <header class="panel-header record-header">
               <div class="panel-heading">
                 <h2>Chickens</h2>
                 <p id="chickens-status" class="section-status">Loading...</p>
               </div>
-              <div class="panel-tools panel-tools-compact">
+              <div class="panel-tools">
                 <button id="chicken-toggle-button" type="button" class="button button-secondary button-small">
-                  + Add Chicken
+                  + Add chicken
                 </button>
               </div>
-            </div>
+            </header>
             <p id="chickens-error" class="message message-error hidden" role="alert"></p>
             <p id="chickens-notice" class="message hidden" aria-live="polite"></p>
-            <p id="chickens-empty" class="message empty-state hidden">Add your first chicken to get started.</p>
+            <p id="chickens-empty" class="message empty-state hidden">
+              Add your first chicken to get started.
+            </p>
             <ul id="chickens-list" class="item-list"></ul>
 
             <div id="chicken-form-panel" class="subsection form-panel hidden">
               <div class="panel-divider"></div>
               <div class="subsection-header">
-                <h3 id="chicken-form-title">Add Chicken</h3>
+                <h3 id="chicken-form-title">Add chicken</h3>
                 <button
                   id="chicken-cancel-button"
                   type="button"
                   class="button button-secondary button-small hidden"
                 >
-                  Cancel Edit
+                  Cancel edit
                 </button>
               </div>
               <form id="chicken-form" class="stack-form">
@@ -213,18 +304,18 @@
                   <span>Breed</span>
                   <input type="text" name="breed" placeholder="Australorp" />
                 </label>
-                <button id="chicken-submit-button" type="submit" class="button">Save Chicken</button>
+                <button id="chicken-submit-button" type="submit" class="button">Save chicken</button>
               </form>
             </div>
-          </section>
+          </article>
 
-          <section class="panel">
-            <div class="panel-header record-header">
+          <article class="panel">
+            <header class="panel-header record-header">
               <div class="panel-heading">
                 <h2>Eggs</h2>
                 <p id="eggs-status" class="section-status">Loading...</p>
               </div>
-              <div class="panel-tools panel-tools-compact">
+              <div class="panel-tools">
                 <label class="sort-control" for="eggs-sort-select">
                   <span>Sort</span>
                   <select id="eggs-sort-select">
@@ -235,10 +326,10 @@
                   </select>
                 </label>
                 <button id="egg-toggle-button" type="button" class="button button-secondary button-small">
-                  + Add Egg Record
+                  + Add egg record
                 </button>
               </div>
-            </div>
+            </header>
             <p id="eggs-error" class="message message-error hidden" role="alert"></p>
             <p id="eggs-notice" class="message hidden" aria-live="polite"></p>
             <p id="eggs-empty" class="message empty-state hidden">No egg records yet.</p>
@@ -258,13 +349,13 @@
             <div id="egg-form-panel" class="subsection form-panel hidden">
               <div class="panel-divider"></div>
               <div class="subsection-header">
-                <h3 id="egg-form-title">Add Egg Record</h3>
+                <h3 id="egg-form-title">Add egg record</h3>
                 <button
                   id="egg-cancel-button"
                   type="button"
                   class="button button-secondary button-small hidden"
                 >
-                  Cancel Edit
+                  Cancel edit
                 </button>
               </div>
               <form id="egg-form" class="stack-form">
@@ -280,20 +371,18 @@
                   <span>Chicken (optional)</span>
                   <select name="chicken_id" id="egg-chicken-select"></select>
                 </label>
-                <button id="egg-submit-button" type="submit" class="button">
-                  Save Egg Record
-                </button>
+                <button id="egg-submit-button" type="submit" class="button">Save egg record</button>
               </form>
             </div>
-          </section>
+          </article>
 
-          <section class="panel">
-            <div class="panel-header record-header">
+          <article class="panel">
+            <header class="panel-header record-header">
               <div class="panel-heading">
                 <h2>Expenses</h2>
                 <p id="expenses-status" class="section-status">Loading...</p>
               </div>
-              <div class="panel-tools panel-tools-compact">
+              <div class="panel-tools">
                 <label class="sort-control" for="expenses-sort-select">
                   <span>Sort</span>
                   <select id="expenses-sort-select">
@@ -304,10 +393,10 @@
                   </select>
                 </label>
                 <button id="expense-toggle-button" type="button" class="button button-secondary button-small">
-                  + Add Expense
+                  + Add expense
                 </button>
               </div>
-            </div>
+            </header>
             <p id="expenses-error" class="message message-error hidden" role="alert"></p>
             <p id="expenses-notice" class="message hidden" aria-live="polite"></p>
             <p id="expenses-empty" class="message empty-state hidden">No expenses yet.</p>
@@ -329,13 +418,13 @@
             <div id="expense-form-panel" class="subsection form-panel hidden">
               <div class="panel-divider"></div>
               <div class="subsection-header">
-                <h3 id="expense-form-title">Add Expense</h3>
+                <h3 id="expense-form-title">Add expense</h3>
                 <button
                   id="expense-cancel-button"
                   type="button"
                   class="button button-secondary button-small hidden"
                 >
-                  Cancel Edit
+                  Cancel edit
                 </button>
               </div>
               <form id="expense-form" class="stack-form">
@@ -355,18 +444,18 @@
                   <span>Amount</span>
                   <input type="number" name="amount" min="0" step="0.01" required placeholder="24.99" />
                 </label>
-                <button id="expense-submit-button" type="submit" class="button">Save Expense</button>
+                <button id="expense-submit-button" type="submit" class="button">Save expense</button>
               </form>
             </div>
-          </section>
+          </article>
 
-          <section class="panel">
-            <div class="panel-header record-header">
+          <article class="panel">
+            <header class="panel-header record-header">
               <div class="panel-heading">
                 <h2>Feed</h2>
                 <p id="feed-status" class="section-status">Loading...</p>
               </div>
-              <div class="panel-tools panel-tools-compact">
+              <div class="panel-tools">
                 <label class="sort-control" for="feed-sort-select">
                   <span>Sort</span>
                   <select id="feed-sort-select">
@@ -377,10 +466,10 @@
                   </select>
                 </label>
                 <button id="feed-toggle-button" type="button" class="button button-secondary button-small">
-                  + Add Feed Record
+                  + Add feed record
                 </button>
               </div>
-            </div>
+            </header>
             <p id="feed-error" class="message message-error hidden" role="alert"></p>
             <p id="feed-notice" class="message hidden" aria-live="polite"></p>
             <p id="feed-empty" class="message empty-state hidden">No feed records yet.</p>
@@ -401,13 +490,13 @@
             <div id="feed-form-panel" class="subsection form-panel hidden">
               <div class="panel-divider"></div>
               <div class="subsection-header">
-                <h3 id="feed-form-title">Add Feed Record</h3>
+                <h3 id="feed-form-title">Add feed record</h3>
                 <button
                   id="feed-cancel-button"
                   type="button"
                   class="button button-secondary button-small hidden"
                 >
-                  Cancel Edit
+                  Cancel edit
                 </button>
               </div>
               <form id="feed-form" class="stack-form">
@@ -416,7 +505,7 @@
                   <input type="date" name="date" required />
                 </label>
                 <label class="field">
-                  <span>Feed Type</span>
+                  <span>Feed type</span>
                   <input type="text" name="feed_type" required placeholder="Layer pellets" />
                 </label>
                 <label class="field">
@@ -427,18 +516,18 @@
                   <span>Chicken (optional)</span>
                   <select name="chicken_id" id="feed-chicken-select"></select>
                 </label>
-                <button id="feed-submit-button" type="submit" class="button">Save Feed Record</button>
+                <button id="feed-submit-button" type="submit" class="button">Save feed record</button>
               </form>
             </div>
-          </section>
+          </article>
 
-          <section class="panel">
-            <div class="panel-header record-header">
+          <article class="panel">
+            <header class="panel-header record-header">
               <div class="panel-heading">
-                <h2>Cleaning Log</h2>
+                <h2>Cleaning log</h2>
                 <p id="cleaning-status" class="section-status">Loading...</p>
               </div>
-              <div class="panel-tools panel-tools-compact">
+              <div class="panel-tools">
                 <label class="sort-control" for="cleaning-sort-select">
                   <span>Sort</span>
                   <select id="cleaning-sort-select">
@@ -447,10 +536,10 @@
                   </select>
                 </label>
                 <button id="cleaning-toggle-button" type="button" class="button button-secondary button-small">
-                  + Add Cleaning Log
+                  + Add cleaning log
                 </button>
               </div>
-            </div>
+            </header>
             <p id="cleaning-error" class="message message-error hidden" role="alert"></p>
             <p id="cleaning-notice" class="message hidden" aria-live="polite"></p>
             <p id="cleaning-empty" class="message empty-state hidden">No cleaning logs yet.</p>
@@ -471,13 +560,13 @@
             <div id="cleaning-form-panel" class="subsection form-panel hidden">
               <div class="panel-divider"></div>
               <div class="subsection-header">
-                <h3 id="cleaning-form-title">Add Cleaning Log</h3>
+                <h3 id="cleaning-form-title">Add cleaning log</h3>
                 <button
                   id="cleaning-cancel-button"
                   type="button"
                   class="button button-secondary button-small hidden"
                 >
-                  Cancel Edit
+                  Cancel edit
                 </button>
               </div>
               <form id="cleaning-form" class="stack-form">
@@ -486,20 +575,24 @@
                   <input type="date" name="date" required />
                 </label>
                 <label class="field">
-                  <span>Task Type</span>
+                  <span>Task type</span>
                   <input type="text" name="task_type" required placeholder="Deep clean" />
                 </label>
                 <label class="field">
                   <span>Notes</span>
                   <input type="text" name="notes" placeholder="Scrubbed roost bars" />
                 </label>
-                <button id="cleaning-submit-button" type="submit" class="button">Save Cleaning Log</button>
+                <button id="cleaning-submit-button" type="submit" class="button">Save cleaning log</button>
               </form>
             </div>
-          </section>
-        </div>
+          </article>
+        </section>
       </div>
     </main>
+
+    <footer class="footer">
+      <p>Built with care for your flock · CoopKeeper</p>
+    </footer>
 
     <script src="/config.js"></script>
     <script type="module" src="/app.js"></script>
