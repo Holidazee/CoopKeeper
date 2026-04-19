@@ -1,10 +1,7 @@
 const STORAGE_KEYS = {
   token: "coookeeper.authToken",
   username: "coookeeper.username",
-  theme: "coookeeper.theme",
 };
-
-const THEMES = { light: "light", dark: "dark" };
 
 const DEFAULT_DATE_RANGE = "30";
 const DEFAULT_SORTS = {
@@ -247,7 +244,14 @@ const elements = {
   cleaningFormTitle: document.querySelector("#cleaning-form-title"),
   cleaningSubmitButton: document.querySelector("#cleaning-submit-button"),
   cleaningCancelButton: document.querySelector("#cleaning-cancel-button"),
-  themeToggle: document.querySelector("#theme-toggle"),
+  // Quick egg widget
+  quickEggCount: document.querySelector("#quick-egg-count"),
+  quickEggChicken: document.querySelector("#quick-egg-chicken"),
+  quickEggPlus: document.querySelector("#quick-egg-plus"),
+  quickEggMinus: document.querySelector("#quick-egg-minus"),
+  quickEggMessage: document.querySelector("#quick-egg-message"),
+  // Auth tabs
+  authTabs: Array.from(document.querySelectorAll("[data-auth-tab]")),
 };
 
 const formConfig = {
@@ -279,10 +283,10 @@ const formConfig = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  initTheme();
   configurePublicLinks();
   setDefaultDates();
   bindEvents();
+  initAuthTabs();
   updateDateFilterButtons();
   renderAuthState();
   resetProtectedData();
@@ -292,40 +296,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-function initTheme() {
-  const stored = window.localStorage.getItem(STORAGE_KEYS.theme);
-  const prefersDark =
-    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const initialTheme =
-    stored === THEMES.light || stored === THEMES.dark
-      ? stored
-      : prefersDark
-        ? THEMES.dark
-        : THEMES.light;
-  applyTheme(initialTheme);
-}
-
-function applyTheme(theme) {
-  const resolved = theme === THEMES.dark ? THEMES.dark : THEMES.light;
-  document.documentElement.setAttribute("data-theme", resolved);
-  if (elements.themeToggle) {
-    const nextTheme = resolved === THEMES.dark ? THEMES.light : THEMES.dark;
-    elements.themeToggle.setAttribute("aria-label", `Switch to ${nextTheme} mode`);
-    elements.themeToggle.setAttribute("title", `Switch to ${nextTheme} mode`);
-    elements.themeToggle.setAttribute(
-      "aria-pressed",
-      String(resolved === THEMES.dark),
-    );
+function initAuthTabs() {
+  if (!elements.authTabs || !elements.authTabs.length) return;
+  const activate = (name) => {
+    for (const tab of elements.authTabs) {
+      const active = tab.dataset.authTab === name;
+      tab.classList.toggle("is-active", active);
+      tab.setAttribute("aria-selected", String(active));
+    }
+    for (const panel of document.querySelectorAll("[data-auth-panel]")) {
+      panel.classList.toggle("hidden", panel.dataset.authPanel !== name);
+    }
+  };
+  for (const tab of elements.authTabs) {
+    tab.addEventListener("click", () => activate(tab.dataset.authTab));
   }
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute("data-theme") === THEMES.dark
-    ? THEMES.dark
-    : THEMES.light;
-  const next = current === THEMES.dark ? THEMES.light : THEMES.dark;
-  applyTheme(next);
-  window.localStorage.setItem(STORAGE_KEYS.theme, next);
+  activate("login");
 }
 
 function configurePublicLinks() {
@@ -370,8 +356,14 @@ function bindEvents() {
     button.addEventListener("click", handleDateFilterClick);
   }
 
-  if (elements.themeToggle) {
-    elements.themeToggle.addEventListener("click", toggleTheme);
+  if (elements.quickEggPlus) {
+    elements.quickEggPlus.addEventListener("click", () => handleQuickEgg(1));
+  }
+  if (elements.quickEggMinus) {
+    elements.quickEggMinus.addEventListener("click", () => handleQuickEgg(-1));
+  }
+  if (elements.quickEggChicken) {
+    elements.quickEggChicken.addEventListener("change", renderQuickEgg);
   }
 }
 
@@ -908,6 +900,7 @@ function refreshDashboard() {
   renderDashboard();
   renderEggChart();
   renderExpenseChart();
+  renderQuickEgg();
 }
 
 function renderDashboard() {
@@ -1473,6 +1466,124 @@ function createActionButton(label, handler, isDanger = false) {
 function renderChickenOptions() {
   renderEggChickenOptions();
   renderFeedChickenOptions();
+  renderQuickEggChickenOptions();
+}
+
+function renderQuickEggChickenOptions() {
+  if (!elements.quickEggChicken) return;
+  const prev = elements.quickEggChicken.value;
+  elements.quickEggChicken.innerHTML = "";
+  addSelectOption(elements.quickEggChicken, "", "All chickens");
+  if (state.token) {
+    for (const chicken of getVisibleChickens().reverse()) {
+      addSelectOption(elements.quickEggChicken, String(chicken.id), getChickenSelectLabel(chicken));
+    }
+  }
+  elements.quickEggChicken.value = findMatchingSelectValue(elements.quickEggChicken, prev);
+  renderQuickEgg();
+}
+
+function getTodayISO() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function getTodayEggsForQuickWidget() {
+  if (!elements.quickEggChicken) return { total: 0, records: [] };
+  const today = getTodayISO();
+  const pickedRaw = String(elements.quickEggChicken.value || "");
+  const pickedId = pickedRaw === "" ? null : Number(pickedRaw);
+
+  const records = (state.eggs || []).filter((e) => {
+    if (String(e.date).slice(0, 10) !== today) return false;
+    if (pickedId === null) return true;
+    return e.chicken_id === pickedId;
+  });
+
+  const total = records.reduce((sum, e) => sum + Number(e.count || 0), 0);
+  return { total, records };
+}
+
+function renderQuickEgg() {
+  if (!elements.quickEggCount) return;
+
+  const { total } = getTodayEggsForQuickWidget();
+  elements.quickEggCount.textContent = String(total);
+
+  const enabled = Boolean(state.token);
+  if (elements.quickEggPlus) elements.quickEggPlus.disabled = !enabled;
+  if (elements.quickEggMinus) elements.quickEggMinus.disabled = !enabled || total <= 0;
+  if (elements.quickEggChicken) elements.quickEggChicken.disabled = !enabled;
+
+  if (!enabled && elements.quickEggMessage) {
+    elements.quickEggMessage.textContent = "Log in to track eggs.";
+    elements.quickEggMessage.removeAttribute("data-tone");
+  }
+}
+
+function setQuickEggMessage(text, tone) {
+  if (!elements.quickEggMessage) return;
+  elements.quickEggMessage.textContent = text || "";
+  if (tone) {
+    elements.quickEggMessage.setAttribute("data-tone", tone);
+  } else {
+    elements.quickEggMessage.removeAttribute("data-tone");
+  }
+}
+
+async function handleQuickEgg(delta) {
+  if (!state.token || !delta) return;
+  if (!elements.quickEggPlus || !elements.quickEggMinus) return;
+
+  const today = getTodayISO();
+  const pickedRaw = String(elements.quickEggChicken ? elements.quickEggChicken.value : "");
+  const pickedId = pickedRaw === "" ? null : Number(pickedRaw);
+
+  elements.quickEggPlus.disabled = true;
+  elements.quickEggMinus.disabled = true;
+  setQuickEggMessage(delta > 0 ? "Logging…" : "Removing…");
+
+  try {
+    if (delta > 0) {
+      // Prefer to bump an existing record for today/this chicken, else create one.
+      const { records } = getTodayEggsForQuickWidget();
+      const existing = records[0];
+      if (existing) {
+        await api.updateEgg(existing.id, {
+          date: today,
+          count: Number(existing.count || 0) + 1,
+          chicken_id: existing.chicken_id ?? null,
+        });
+      } else {
+        await api.createEgg({ date: today, count: 1, chicken_id: pickedId });
+      }
+      setQuickEggMessage("Logged one egg.", "success");
+    } else {
+      // Decrement: shrink the most recent today-record; delete if it hits zero.
+      const { records } = getTodayEggsForQuickWidget();
+      const target = records[records.length - 1];
+      if (!target) {
+        setQuickEggMessage("Nothing to remove.", "error");
+      } else if (Number(target.count || 0) <= 1) {
+        await api.deleteEgg(target.id);
+        setQuickEggMessage("Removed one egg.", "success");
+      } else {
+        await api.updateEgg(target.id, {
+          date: today,
+          count: Number(target.count) - 1,
+          chicken_id: target.chicken_id ?? null,
+        });
+        setQuickEggMessage("Removed one egg.", "success");
+      }
+    }
+    await Promise.all([loadEggs(), loadAlerts()]);
+  } catch (error) {
+    setQuickEggMessage(error.message || "Something went wrong.", "error");
+  } finally {
+    renderQuickEgg();
+  }
 }
 
 function renderEggChickenOptions() {
