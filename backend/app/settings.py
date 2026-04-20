@@ -43,3 +43,12 @@ CORS_ORIGINS = parse_csv_env("CORS_ORIGINS") or (LOCAL_CORS_ORIGINS if APP_ENV =
 
 if APP_ENV != "local" and SECRET_KEY == "coookeeper-local-dev-secret":
     raise RuntimeError("SECRET_KEY must be set when APP_ENV is not local")
+
+# --- Email / digest configuration -------------------------------------------
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+DIGEST_FROM_EMAIL = os.getenv("DIGEST_FROM_EMAIL", "CoopKeeper <hello@coopkeeper.net>")
+DIGEST_RECIPIENT_EMAIL = os.getenv("DIGEST_RECIPIENT_EMAIL", "")
+ADMIN_DIGEST_SECRET = os.getenv("ADMIN_DIGEST_SECRET", "")
+DIGEST_TIMEZONE = os.getenv("DIGEST_TIMEZONE", "America/Chicago")
+# Set to "1" to disable the scheduler (useful for tests / local dev).
+DIGEST_SCHEDULER_DISABLED = os.getenv("DIGEST_SCHEDULER_DISABLED", "").lower() in {"1", "true", "yes"}

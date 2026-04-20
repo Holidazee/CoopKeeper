@@ -9,6 +9,7 @@ from starlette.responses import FileResponse
 from starlette.staticfiles import StaticFiles
 
 from app.db.database import Base, engine
+from app.routers.admin import router as admin_router
 from app.routers.alerts import router as alerts_router
 from app.routers.auth import router as auth_router
 from app.routers.chickens import router as chickens_router
@@ -17,6 +18,7 @@ from app.routers.dashboard import router as dashboard_router
 from app.routers.eggs import router as eggs_router
 from app.routers.expenses import router as expenses_router
 from app.routers.feed import router as feed_router
+from app.scheduler import start_scheduler, stop_scheduler
 from app.settings import APP_TITLE, APP_VERSION, CORS_ORIGINS
 
 ENV = os.getenv("ENV", "dev")
@@ -35,6 +37,11 @@ POSTGRES_MIGRATIONS = (
     text("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)"),
     text("ALTER TABLE eggs ALTER COLUMN date TYPE DATE USING date::date"),
     text("ALTER TABLE eggs ALTER COLUMN chicken_id DROP NOT NULL"),
+    text(
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at "
+        "TIMESTAMPTZ NOT NULL DEFAULT now()"
+    ),
+    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ"),
 )
 
 
@@ -49,7 +56,11 @@ def ensure_database_schema() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     ensure_database_schema()
-    yield
+    start_scheduler()
+    try:
+        yield
+    finally:
+        stop_scheduler()
 
 
 app = FastAPI(
@@ -81,6 +92,7 @@ for router in (
     cleaning_logs_router,
     alerts_router,
     dashboard_router,
+    admin_router,
 ):
     app.include_router(router)
 

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
@@ -64,6 +66,9 @@ def login(credentials: UserCredentials):
         user = session.scalar(select(User).where(User.username == username))
         if user is None or not verify_password(credentials.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid username or password")
+
+        user.last_login = datetime.now(timezone.utc)
+        commit_and_refresh(session, user)
 
     return AuthTokenRead(
         access_token=create_access_token(str(user.id)),
